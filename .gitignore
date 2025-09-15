@@ -1,0 +1,36 @@
+# CMake build directories
+build/
+cmake-build*/
+
+# planing docs
+planning_docs/
+
+# Visual Studio / MSVC
+.vs/
+*.vcxproj*
+*.sln
+*.user
+*.opendb
+*.ipch
+*.pdb
+*.ilk
+*.tlog/
+*.obj
+*.lib
+*.exe
+*.log
+
+# Xcode (if used)
+*.xcodeproj/
+
+# CUDA generated/intermediate (if any)
+*.cubin
+*.ptx
+*.fatbin
+
+# OS/Editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+

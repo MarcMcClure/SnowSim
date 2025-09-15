@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.18)
+
+project(SnowSim VERSION 0.1.0 LANGUAGES CXX)
+
+option(ENABLE_CUDA "Enable CUDA backend" OFF)
+
+if(ENABLE_CUDA)
+  enable_language(CUDA)
+endif()
+
+add_library(snow_sim STATIC
+  src/cpu_backend.cpp
+)
+
+target_include_directories(snow_sim PUBLIC include)
+target_compile_features(snow_sim PUBLIC cxx_std_17)
+
+if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
+  target_sources(snow_sim PRIVATE src/cuda_backend.cu)
+  target_compile_definitions(snow_sim PUBLIC SNOWSIM_HAS_CUDA=1)
+  set_target_properties(snow_sim PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+else()
+  target_compile_definitions(snow_sim PUBLIC SNOWSIM_HAS_CUDA=0)
+endif()
+
+add_executable(snow_sim_app src/main.cpp)
+target_link_libraries(snow_sim_app PRIVATE snow_sim)
+
+set_property(TARGET snow_sim_app PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
