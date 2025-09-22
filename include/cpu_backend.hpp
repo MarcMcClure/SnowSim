@@ -10,7 +10,7 @@ namespace snow
         class CPUSimulation : public Simulation
         {
         public:
-            void step(Grid &grid, const Params &params) override;
+            void step(Fields& fields, const Params& params) override;
         };
 
     } // namespace cpu

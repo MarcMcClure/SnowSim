@@ -9,7 +9,7 @@ namespace snow
     class Simulation
     {
     public:
-        virtual void step(Grid &grid, const Params &params) = 0;
+        virtual void step(Fields& fields, const Params& params) = 0;
         virtual ~Simulation() = default;
     };
 

@@ -12,24 +12,60 @@ int main()
     using namespace snow;
 
     Params params{};
-    params.wind_speed = 5.0f;
-    params.total_sim_time = 0.1f;
-    params.time_step_duration = 0.1f;
+    params.wind_speed = 5.0f;               // m/sec
+    params.settling_speed = 0.05f;          // m/sec
+    params.precipitation_rate = 1.0f;       // g/m^2/sec
+    params.settaled_snow_density = 200000;  // g/m^2
+    params.ground_height = 25.0f;           // m above y=0
+
+    params.Lx = 1000.0f; // meters
+    params.Ly = 200.0f;  // meters
+    params.dx = 10.0f;   // meters
+    params.dy = 10.0f;   // meters
+
+    params.nx = static_cast<std::size_t>(std::lround(params.Lx / params.dx));
+    params.ny = static_cast<std::size_t>(std::lround(params.Ly / params.dy));
+
+    params.total_sim_time = 0.1f  * 3600.0f;    //sec
+    params.time_step_duration = 0.1f;           //sec
     params.steps_per_frame = 1;
 
-    params.total_time_steps = static_cast<int>(std::lround(params.total_sim_time * 3600.0f / params.time_step_duration));
+    params.total_time_steps = static_cast<int>(std::lround(params.total_sim_time / params.time_step_duration));
 
     // Define physical domain and discretization
-    Grid grid{};
-    grid.Lx = 1000.0f; // meters
-    grid.Ly = 200.0f;  // meters
-    grid.dx = 10.0f;   // meters
-    grid.dy = 10.0f;   // meters
-
-    grid.nx = static_cast<std::size_t>(std::lround(grid.Lx / grid.dx));
-    grid.ny = static_cast<std::size_t>(std::lround(grid.Ly / grid.dy));
-
-    grid.data.assign(grid.nx * grid.ny, 0.0f);
+    Fields fields;
+    //this mask is used for tiles where the groud level is over the center of the tile. ground tiles are 0 air tiles are 1
+    fields.air_mask = Field2D<uint8_t>(params.nx, params.ny, 1);
+    for (std::size_t i = 0; i < fields.air_mask.nx; i++){
+        for (std::size_t j = 0; j < fields.air_mask.ny; j++){
+            if((j + 0.5f)*params.dy <= params.ground_height) fields.air_mask(i,j) = 0;
+            else continue;
+        }
+    }
+    fields.snow_density = Field2D<float>(params.nx, params.ny);
+    fields.snow_transport_speed_x = Field2D<float>(params.nx + 1, params.ny, params.wind_speed);
+    fields.snow_transport_speed_y = Field2D<float>(params.nx, params.ny + 1, -params.settling_speed);
+    fields.precipitation_source = Field1D<float>(params.nx, params.precipitation_rate);
+    // Inflow at x=0: match the supplied precipitation with the local vertical motion,
+    // then scale by the upwind horizontal speed to get a lateral source term (g/(m^2*s)).
+    fields.windborn_horizontal_source = Field1D<float>(params.ny, 0.0f);
+    {
+        for (std::size_t j = 0; j < params.ny; ++j)
+        {
+            const float vy_bottom = fields.snow_transport_speed_y(0, j);
+            const float vy_top = fields.snow_transport_speed_y(0, j + 1);
+            const float vy_avg = 0.5f * (vy_bottom + vy_top); // boundary vertical velocity (m/s)
+            const float abs_vy = std::fabs(vy_avg);
+            const float vy_mag = abs_vy > 1e-6f ? abs_vy : 1e-6f; // prevent divide-by-zero
+            const float ux = fields.snow_transport_speed_x(0, j); // left boundary face (m/s)
+            const float ux_in = ux > 0.0f ? ux : 0.0f; // only inflow contributes
+            const float lateral_scale = ux_in / vy_mag; // dimensionless ratio of speeds
+            const bool is_air = fields.air_mask(0, j) != 0;
+            fields.windborn_horizontal_source(j) = is_air ? params.precipitation_rate * lateral_scale : 0.0f; // g/(m^2*s)
+        }
+    }
+    fields.snow_accumulation_mass = Field1D<float>(params.nx);
+    fields.snow_accumulation_density = Field1D<float>(params.nx,params.settaled_snow_density);
 
 // compile with both backends then choose which one to use at run time
 #if SNOWSIM_HAS_CUDA
@@ -40,9 +76,27 @@ int main()
 
     for (int t = 0; t < params.total_time_steps; ++t)
     {
-        sim.step(grid, params);
+        sim.step(fields, params);
     }
 
-    std::cout << "Finished simulation steps: grid(" << grid.nx << "x" << grid.ny << ")\n";
+    // std::cout << "precipitation_rate" << ": ";
+    // for (int i = 0; i < 20; i++) {
+    //     std::cout << fields.precipitation_source.data[i] << " ";
+    // }
+    // std::cout << "\n";
+    
+
+    // std::cout << "windborn_horizontal_source" << ": ";
+    // for (int i = 0; i < 20; i++) {
+    //     std::cout << fields.windborn_horizontal_source.data[i] << " ";
+    // }
+    // std::cout << "\n";
+
+    std::cout << "Finished simulation steps: grid(" << params.nx << "x" << params.ny << ")\n";
     return 0;
 }
+
+
+
+
+

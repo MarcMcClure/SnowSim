@@ -10,7 +10,7 @@ namespace cuda {
 
 class CUDASimulation : public Simulation {
 public:
-    void step(Grid& grid, const Params& params) override;
+    void step(Fields& fields, const Params& params) override;
 };
 
 } // namespace cuda

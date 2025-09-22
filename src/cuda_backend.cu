@@ -16,8 +16,8 @@ __global__ void updateKernel(float* data, int nx, int ny, Params params) {
     }
 }
 
-void CUDASimulation::step(Grid& grid, const Params& params) {
-    // launch updateKernel on grid.data (GPU memory)
+void CUDASimulation::step(Fields& fields, const Params& params) {
+    // launch updateKernel on field.data (GPU memory)
 }
 
 } // namespace cuda
