@@ -23,6 +23,7 @@ external/
 *.lib
 *.exe
 *.log
+*.zip
 
 # Xcode (if used)
 *.xcodeproj/
