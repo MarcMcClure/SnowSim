@@ -5,6 +5,9 @@ cmake-build*/
 # planing docs
 planning_docs/
 
+# external libraries (glad,glfw, and glm)
+external/
+
 # Visual Studio / MSVC
 .vscode/
 .vs/

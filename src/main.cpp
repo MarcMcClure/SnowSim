@@ -7,6 +7,7 @@
 // Safe to include: provides CPU fallback when SNOWSIM_HAS_CUDA == 0
 // and CUDA interface when enabled.
 #include "cuda_backend.hpp"
+#include "renderer.hpp"
 
 int main()
 {
@@ -75,6 +76,12 @@ int main()
     fields.snow_accumulation_density = Field1D<float>(params.nx,params.settaled_snow_density);
     #pragma endregion
 
+    const bool viz_ready = viz::initialize(1280, 720, "SnowSim Preview");
+    if (!viz_ready)
+    {
+        std::cerr << "[viz] Visualization disabled.\n";
+    }
+
 // compile with both backends then choose which one to use at run time
 #if SNOWSIM_HAS_CUDA
     cuda::CUDASimulation sim; // Uses real CUDA backend
@@ -103,11 +110,27 @@ int main()
     }
     #pragma endregion
     // TODO: Refine CFL safety check to capture local variations and per-direction thresholds.
-
+    // TODO: swap from GLEW to the core version of GLAD for opengl 4.3 
+    // TODO: if you need textures use stb_image.h not SOIL2. I know its what you did in class but its old AF.
     // sim loop
     for (int t = 0; t < params.total_time_steps; ++t)
     {
+        if (viz_ready)
+        {
+            viz::poll_events();
+            if (viz::should_close())
+            {
+                break;
+            }
+        }
+
         sim.step(fields, params);
+
+        if (viz_ready)
+        {
+            viz::begin_frame();
+            viz::end_frame();
+        }
     }
 
     std::cout << "accumulated snow" << ":\n";
@@ -115,6 +138,11 @@ int main()
         std::cout << fields.snow_accumulation_mass.data[i] << "\n";
     }
     std::cout << "\n";
+
+    if (viz_ready)
+    {
+        viz::shutdown();
+    }
 
     std::cout << "Finished simulation steps: grid(" << params.nx << "x" << params.ny << ")\n";
     return 0;

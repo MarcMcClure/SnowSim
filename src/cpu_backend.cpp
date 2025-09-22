@@ -24,7 +24,7 @@ namespace snow
                     : (face_i >= fields.snow_density.nx ? fields.snow_density.nx : face_i);
 
                 if (source_cell_i >= fields.snow_density.nx) return 0.0f; // donor outside domain, return 0
-                if (fields.air_mask(source_cell_i, j) == 0) return 0.0f; // donor is ground, return 0
+                if (!fields.air_mask(source_cell_i, j)) return 0.0f; // donor is ground, return 0
 
                 return velocity * fields.snow_density(source_cell_i, j);
             }
@@ -42,7 +42,7 @@ namespace snow
                     : (face_j >= fields.snow_density.ny ? fields.snow_density.ny : face_j);
 
                 if (source_cell_j >= fields.snow_density.ny) return 0.0f; // donor outside domain, return 0
-                if (fields.air_mask(i, source_cell_j) == 0) return 0.0f;// donor is ground, return 0
+                if (!fields.air_mask(i, source_cell_j)) return 0.0f;// donor is ground, return 0
 
                 return velocity * fields.snow_density(i, source_cell_j);
             }        } // namespace
