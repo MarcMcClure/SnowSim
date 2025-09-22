@@ -1,6 +1,6 @@
 #include "renderer.hpp"
 
-#include <GLEW/glew.h>
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
@@ -59,12 +59,9 @@ bool initialize(std::int32_t width, std::int32_t height, const char* title)
     glfwSetFramebufferSizeCallback(g_window, frame_buffer_size_callback);
     glfwSwapInterval(1);
 
-    glewExperimental = GL_TRUE;
-    const GLenum glew_status = glewInit();
-    if (glew_status != GLEW_OK)
+    if (!gladLoadGL(glfwGetProcAddress))
     {
-        std::cerr << "[viz] Failed to initialize GLEW: "
-                  << reinterpret_cast<const char*>(glewGetErrorString(glew_status)) << '\n';
+        std::cerr << "[viz] Failed to initialize GLAD\n";
         shutdown();
         return false;
     }
@@ -118,4 +115,3 @@ void end_frame()
 
 } // namespace viz
 } // namespace snow
-

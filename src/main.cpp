@@ -1,4 +1,4 @@
-﻿#include <algorithm>
+#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include "types.hpp"
@@ -31,7 +31,7 @@ int main()
     params.nx = static_cast<std::size_t>(std::lround(params.Lx / params.dx));
     params.ny = static_cast<std::size_t>(std::lround(params.Ly / params.dy));
 
-    params.total_sim_time = 10.0f  * 3600.0f;    //sec
+    params.total_sim_time = 1.0f  * 3600.0f;    //sec
     params.time_step_duration = 0.2f;           //sec
     params.steps_per_frame = 1;
 
@@ -110,7 +110,7 @@ int main()
     }
     #pragma endregion
     // TODO: Refine CFL safety check to capture local variations and per-direction thresholds.
-    // TODO: swap from GLEW to the core version of GLAD for opengl 4.3 
+    // TODO: configure GLAD/OpenGL state for visualization once rendering is implemented 
     // TODO: if you need textures use stb_image.h not SOIL2. I know its what you did in class but its old AF.
     // sim loop
     for (int t = 0; t < params.total_time_steps; ++t)
@@ -133,11 +133,11 @@ int main()
         }
     }
 
-    std::cout << "accumulated snow" << ":\n";
-    for (int i = 0; i < params.nx; i++) {
-        std::cout << fields.snow_accumulation_mass.data[i] << "\n";
-    }
-    std::cout << "\n";
+    // std::cout << "accumulated snow" << ":\n";
+    // for (int i = 0; i < params.nx; i++) {
+    //     std::cout << fields.snow_accumulation_mass.data[i] << "\n";
+    // }
+    // std::cout << "\n";
 
     if (viz_ready)
     {
@@ -147,4 +147,5 @@ int main()
     std::cout << "Finished simulation steps: grid(" << params.nx << "x" << params.ny << ")\n";
     return 0;
 }
+
 

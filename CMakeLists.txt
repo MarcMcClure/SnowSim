@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(SnowSim VERSION 0.1.0 LANGUAGES CXX)
+project(SnowSim VERSION 0.1.0 LANGUAGES C CXX)
 
 option(ENABLE_CUDA "Enable CUDA backend" OFF)
 
@@ -36,7 +36,9 @@ target_include_directories(snow_sim_app PRIVATE
   ${CMAKE_SOURCE_DIR}/external/include
 )
 
-target_link_directories(snow_sim_app PRIVATE ${CMAKE_SOURCE_DIR}/external/lib)
+target_link_directories(snow_sim_app PRIVATE
+  ${CMAKE_SOURCE_DIR}/external/lib
+)
 
 target_link_libraries(snow_sim_app PRIVATE
   snow_sim
@@ -52,8 +54,12 @@ target_link_libraries(snow_sim_app PRIVATE
   winmm.lib
 )
 
-add_custom_command(TARGET snow_sim_app POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          $<TARGET_FILE_DIR:snow_sim_app>)
+set(GLFW_DLL ${CMAKE_SOURCE_DIR}/external/glfw3.dll)
+if(EXISTS ${GLFW_DLL})
+  add_custom_command(TARGET snow_sim_app POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${GLFW_DLL}
+            $<TARGET_FILE_DIR:snow_sim_app>)
+endif()
 
 set_property(TARGET snow_sim_app PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
