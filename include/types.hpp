@@ -137,6 +137,7 @@ namespace snow
     {
         Field2D<std::uint8_t> air_mask;     // 1 = air, 0 = land
         Field2D<float> snow_density;        // snow density or concentration         g/m^2
+        Field2D<float> next_snow_density;   // scratch buffer for next-step density     g/m^2
         Field2D<float> snow_transport_speed_x;        // wind x-component                      m/s
         Field2D<float> snow_transport_speed_y;        // wind y-component                      m/s
         Field1D<float> snow_accumulation_mass;   // accumulated snow mass on ground       g
@@ -146,3 +147,4 @@ namespace snow
     };
 
 } // namespace snow
+

@@ -6,6 +6,7 @@ cmake-build*/
 planning_docs/
 
 # Visual Studio / MSVC
+.vscode/
 .vs/
 *.vcxproj*
 *.sln
