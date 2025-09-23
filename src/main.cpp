@@ -34,7 +34,7 @@ int main()
 
     params.total_sim_time = 1.0f  * 3600.0f;    //sec
     params.time_step_duration = 0.2f;           //sec
-    params.steps_per_frame = 10;
+    params.steps_per_frame = 100;
 
     params.total_time_steps = static_cast<int>(std::lround(params.total_sim_time / params.time_step_duration));
 
@@ -46,7 +46,31 @@ int main()
     // Define physical domain and discretization, setting up fields
     #pragma region
     Fields fields;
-    //this mask is used for tiles where the groud level is over the center of the tile. ground tiles are 0 air tiles are 1
+    fields.air_mask = Field2D<uint8_t>(params.nx, params.ny, 1);
+
+    // ground mask where the ground is a parabola with a minimum of params.ground ans a max of params.Ly - params.ground
+    // const float vertex_x = 0.5f * params.Lx;
+    // const float vertex_y = params.ground_height;
+    // const float edge_height = params.Ly - params.ground_height;
+    // const float denom = vertex_x * vertex_x;
+    // const float a = denom > 0.0f ? (edge_height - vertex_y) / denom : 0.0f;
+
+    // for (std::size_t i = 0; i < fields.air_mask.nx; ++i)
+    // {
+    //     const float x_center = (static_cast<float>(i) + 0.5f) * params.dx;
+    //     const float ground_y = a * (x_center - vertex_x) * (x_center - vertex_x) + vertex_y;
+
+    //     for (std::size_t j = 0; j < fields.air_mask.ny; ++j)
+    //     {
+    //         const float cell_center_y = (static_cast<float>(j) + 0.5f) * params.dy;
+    //         if (cell_center_y <= ground_y)
+    //         {
+    //             fields.air_mask(i, j) = 0;
+    //         }
+    //     }
+    // }
+
+    // ground mask where the ground is a flat plain at params.ground level
     fields.air_mask = Field2D<uint8_t>(params.nx, params.ny, 1);
     for (std::size_t i = 0; i < fields.air_mask.nx; i++){
         for (std::size_t j = 0; j < fields.air_mask.ny; j++){
@@ -134,9 +158,7 @@ int main()
             if (t % params.steps_per_frame == 0)
             {
                 viz::begin_frame();
-                viz::render_cube(params.light_direction,
-                                  params.light_color,
-                                  params.object_color);
+                viz::render_frame(params);
                 viz::end_frame();
             }
         }
@@ -149,6 +171,12 @@ int main()
 
         sim.step(fields, params);
     }
+
+    std::cout << "accumulated snow" << ":\n";
+    for (int i = 0; i < params.nx; i++) {
+        std::cout << fields.snow_accumulation_mass.data[i] << "\n";
+    }
+    std::cout << "\n";
 
     if (viz_ready)
     {

@@ -3,6 +3,7 @@
 #include "camera.hpp"
 #include "cube_mesh.hpp"
 #include "shader_program.hpp"
+#include "types.hpp"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -75,12 +76,12 @@ namespace {
 
 bool initialize(std::int32_t width, std::int32_t height, const char* title)
 {
-    if (g_window)
+    if (g_window)  // if already intitilized return true.
     {
         return true;
     }
 
-    if (!glfwInit())
+    if (!glfwInit())     // attempt to initialize the glfw lib
     {
         std::cerr << "[viz] Failed to initialize GLFW\n";
         return false;
@@ -202,6 +203,13 @@ void begin_frame()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void render_frame(const Params& params)
+{
+    render_cube(params.light_direction,
+                params.light_color,
+                params.object_color);
+}
+
 void end_frame()
 {
     if (!g_window)
@@ -259,4 +267,3 @@ bool visualizer_is_closed()
 
 } // namespace viz
 } // namespace snow
-

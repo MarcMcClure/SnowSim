@@ -44,11 +44,11 @@ void Camera::update(GLFWwindow* window, float delta_time)
     }
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
     {
-        position_ -= world_up_ * velocity;
+        position_ -= up_ * velocity;
     }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
     {
-        position_ += world_up_ * velocity;
+        position_ += up_ * velocity;
     }
 }
 

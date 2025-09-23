@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <glm/glm/glm.hpp>
 
+#include "types.hpp"
+
 namespace snow {
 namespace viz {
 
@@ -14,6 +16,7 @@ void process_input();
 bool should_close();
 
 void begin_frame();
+void render_frame(const snow::Params& params);
 void end_frame();
 
 void render_cube(const glm::vec3& light_direction,
@@ -28,4 +31,3 @@ bool visualizer_is_closed();
 
 } // namespace viz
 } // namespace snow
-
