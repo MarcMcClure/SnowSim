@@ -33,7 +33,7 @@ int main()
 
     params.total_sim_time = 1.0f  * 3600.0f;    //sec
     params.time_step_duration = 0.2f;           //sec
-    params.steps_per_frame = 1;
+    params.steps_per_frame = 100;
 
     params.total_time_steps = static_cast<int>(std::lround(params.total_sim_time / params.time_step_duration));
     #pragma endregion
@@ -115,29 +115,32 @@ int main()
     // sim loop
     for (int t = 0; t < params.total_time_steps; ++t)
     {
+
+
         if (viz_ready)
         {
             viz::poll_events();
-            if (viz::should_close())
-            {
+            viz::process_input();
+
+            if(viz::should_close()){
                 break;
+            }
+
+            if ( t % params.steps_per_frame == 0)
+            {
+                viz::begin_frame();
+                viz::end_frame();
             }
         }
 
-        sim.step(fields, params);
-
-        if (viz_ready)
+        // TODO: remove when not needed for debuging
+        if (ceilf(t * params.time_step_duration / 60.0f) != ceilf((t + 1) * params.time_step_duration / 60.0f))    
         {
-            viz::begin_frame();
-            viz::end_frame();
+            std::cout << t*params.time_step_duration/60 << " min into sim\n"; 
         }
-    }
 
-    // std::cout << "accumulated snow" << ":\n";
-    // for (int i = 0; i < params.nx; i++) {
-    //     std::cout << fields.snow_accumulation_mass.data[i] << "\n";
-    // }
-    // std::cout << "\n";
+        sim.step(fields, params);
+    }
 
     if (viz_ready)
     {
@@ -145,7 +148,5 @@ int main()
     }
 
     std::cout << "Finished simulation steps: grid(" << params.nx << "x" << params.ny << ")\n";
-    return 0;
+
 }
-
-

@@ -9,6 +9,9 @@
 namespace snow {
 namespace viz {
 
+// TODO: use Instanced rendering for arrow to improve performance.
+// TODO: use ImGui for gui side bar.
+
 namespace {
     GLFWwindow* g_window = nullptr;
     std::int32_t g_width = 0;
@@ -87,6 +90,11 @@ void poll_events()
     glfwPollEvents();
 }
 
+void process_input()
+{
+    
+}
+
 bool should_close()
 {
     return g_window && glfwWindowShouldClose(g_window);
@@ -94,24 +102,19 @@ bool should_close()
 
 void begin_frame()
 {
-    if (!g_window)
-    {
-        return;
-    }
-
     glClearColor(0.05f, 0.05f, 0.08f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void end_frame()
 {
-    if (!g_window)
-    {
-        return;
-    }
-
     glfwSwapBuffers(g_window);
 }
+
+bool visualizer_is_closed(){
+    return g_window == nullptr;
+}
+
 
 } // namespace viz
 } // namespace snow
