@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <glm/glm/glm.hpp>
 
 namespace snow
 {
@@ -30,6 +31,10 @@ namespace snow
         int total_time_steps; // number of steps
 
         int steps_per_frame;
+
+        glm::vec3 light_direction; // world-space direction toward the light
+        glm::vec3 light_color;     // RGB intensity for the directional light
+        glm::vec3 object_color;    // base color applied to rendered geometry
     };
 
     template <typename T>

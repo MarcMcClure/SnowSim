@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <glm/glm/glm.hpp>
 #include "types.hpp"
 #include "simulation.hpp"
 #include "cpu_backend.hpp"
@@ -33,9 +34,13 @@ int main()
 
     params.total_sim_time = 1.0f  * 3600.0f;    //sec
     params.time_step_duration = 0.2f;           //sec
-    params.steps_per_frame = 100;
+    params.steps_per_frame = 10;
 
     params.total_time_steps = static_cast<int>(std::lround(params.total_sim_time / params.time_step_duration));
+
+    params.light_direction = glm::vec3(-0.4f, -1.0f, -0.6f);
+    params.light_color = glm::vec3(1.0f, 0.95f, 0.9f);
+    params.object_color = glm::vec3(0.8f, 0.85f, 0.95f);
     #pragma endregion
 
     // Define physical domain and discretization, setting up fields
@@ -126,9 +131,12 @@ int main()
                 break;
             }
 
-            if ( t % params.steps_per_frame == 0)
+            if (t % params.steps_per_frame == 0)
             {
                 viz::begin_frame();
+                viz::render_cube(params.light_direction,
+                                  params.light_color,
+                                  params.object_color);
                 viz::end_frame();
             }
         }
@@ -150,3 +158,4 @@ int main()
     std::cout << "Finished simulation steps: grid(" << params.nx << "x" << params.ny << ")\n";
 
 }
+

@@ -12,7 +12,10 @@ add_library(snow_sim STATIC
   src/cpu_backend.cpp
 )
 
-target_include_directories(snow_sim PUBLIC include)
+target_include_directories(snow_sim PUBLIC
+    include
+    ${CMAKE_SOURCE_DIR}/external/include
+)
 target_compile_features(snow_sim PUBLIC cxx_std_17)
 
 if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
@@ -29,6 +32,9 @@ add_executable(snow_sim_app
   src/main.cpp
   viz/renderer.cpp
   viz/gl.c
+  viz/shader_program.cpp
+  viz/cube_mesh.cpp
+  viz/camera.cpp
 )
 
 target_include_directories(snow_sim_app PRIVATE
@@ -62,4 +68,10 @@ if(EXISTS ${GLFW_DLL})
             $<TARGET_FILE_DIR:snow_sim_app>)
 endif()
 
+add_custom_command(TARGET snow_sim_app POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/resources
+          $<TARGET_FILE_DIR:snow_sim_app>/resources)
+
 set_property(TARGET snow_sim_app PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
