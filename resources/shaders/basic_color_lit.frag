@@ -3,6 +3,7 @@
 // Interpolated values coming from the vertex shader.
 in vec3 vNormal;  // World-space surface normal per fragment
 in vec3 vFragPos; // World-space position (unused now, useful for specular/shadows later)
+in vec3 vColor;   // Optional per-vertex color
 
 out vec4 FragColor;
 
@@ -11,6 +12,7 @@ uniform vec3 uViewPos;        // Camera position (reserved for future specular t
 uniform vec3 uLightDirection; // Direction the light travels across the scene
 uniform vec3 uLightColor;     // RGB intensity of the light source
 uniform vec3 uObjectColor;    // Base albedo of the rendered geometry
+uniform bool uUseVertexColor; // When true, use per-vertex colors instead of uniform object color
 
 void main()
 {
@@ -26,6 +28,7 @@ void main()
 
     // No specular lighting component at this time
 
-    vec3 color = (ambient + diffuse) * uObjectColor;
+    vec3 baseColor = uUseVertexColor ? vColor : uObjectColor;
+    vec3 color = (ambient + diffuse) * baseColor;
     FragColor = vec4(color, 1.0);
 }

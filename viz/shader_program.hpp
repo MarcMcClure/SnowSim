@@ -26,6 +26,7 @@ public:
     void set_uniform(const std::string& name, const glm::mat4& value) const;
     void set_uniform(const std::string& name, const glm::vec3& value) const;
     void set_uniform(const std::string& name, float value) const;
+    void set_uniform(const std::string& name, int value) const;
 
     bool is_valid() const { return program_id_ != 0; }
 
@@ -35,4 +36,3 @@ private:
 
 } // namespace viz
 } // namespace snow
-

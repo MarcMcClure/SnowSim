@@ -34,6 +34,7 @@ add_executable(snow_sim_app
   viz/gl.c
   viz/shader_program.cpp
   viz/cube_mesh.cpp
+  viz/grid_mesh.cpp
   viz/camera.cpp
 )
 
@@ -74,4 +75,3 @@ add_custom_command(TARGET snow_sim_app POST_BUILD
           $<TARGET_FILE_DIR:snow_sim_app>/resources)
 
 set_property(TARGET snow_sim_app PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-

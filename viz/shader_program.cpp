@@ -153,5 +153,14 @@ void ShaderProgram::set_uniform(const std::string& name, float value) const
     }
 }
 
+void ShaderProgram::set_uniform(const std::string& name, int value) const
+{
+    GLint location = glGetUniformLocation(program_id_, name.c_str());
+    if (location != -1)
+    {
+        glUniform1i(location, value);
+    }
+}
+
 } // namespace viz
 } // namespace snow

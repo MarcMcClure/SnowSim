@@ -16,9 +16,10 @@ void process_input();
 bool should_close();
 
 void begin_frame();
-void render_frame(const snow::Params& params);
+void render_frame(const snow::Params& params, const snow::Fields& fields);
 void end_frame();
 
+void render_air_mask(const snow::Params& params, const snow::Field2D<std::uint8_t>& air_mask);
 void render_cube(const glm::vec3& light_direction,
                  const glm::vec3& light_color,
                  const glm::vec3& object_color);

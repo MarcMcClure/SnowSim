@@ -1,7 +1,8 @@
-#include "renderer.hpp"
+﻿#include "renderer.hpp"
 
 #include "camera.hpp"
 #include "cube_mesh.hpp"
+#include "grid_mesh.hpp"
 #include "shader_program.hpp"
 #include "types.hpp"
 
@@ -9,8 +10,10 @@
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace snow {
 namespace viz {
@@ -25,7 +28,11 @@ namespace {
 
     ShaderProgram g_shader;
     CubeMesh g_cube_mesh;
+    GridMesh2D g_air_mask_mesh;
     Camera g_camera;
+
+    bool g_air_mask_ready = false;               // has the GPU grid been created?
+    std::vector<float> g_air_mask_buffer;        // CPU staging for per-cell colors (size: ny*nx)
 
     float g_last_frame = 0.0f;
     float g_delta_time = 0.0f;
@@ -35,6 +42,7 @@ namespace {
     double g_last_y = 0.0;
 
     const std::string kShaderDir = "resources/shaders/";
+    constexpr float simWidthInModelSpace = 100.0f;
 
     void frame_buffer_size_callback(GLFWwindow*, int width, int height)
     {
@@ -127,7 +135,15 @@ bool initialize(std::int32_t width, std::int32_t height, const char* title)
         return false;
     }
 
+    //initialize cube mesh
     if (!g_cube_mesh.initialize())
+    {
+        shutdown();
+        return false;
+    }
+
+    //initialize air mesh mask
+    if (g_air_mask_mesh.initialize(air_mask.ny, air_mask.nx, simWidthInModelSpace))
     {
         shutdown();
         return false;
@@ -144,13 +160,20 @@ bool initialize(std::int32_t width, std::int32_t height, const char* title)
     g_last_y = cursor_y;
 
     g_last_frame = static_cast<float>(glfwGetTime());
+    
+    glClearColor(0.05f, 0.05f, 0.08f, 1.0f); //set abckground color
 
     return true;
 }
 
 void shutdown()
 {
+    g_air_mask_mesh.destroy();
+    g_air_mask_ready = false;
+    g_air_mask_buffer.clear();
+
     g_cube_mesh.destroy();
+
     g_shader.destroy();
 
     if (g_window)
@@ -199,25 +222,63 @@ void begin_frame()
         return;
     }
 
-    glClearColor(0.05f, 0.05f, 0.08f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void render_frame(const Params& params)
+void render_frame(const Params& params, const Fields& fields)
 {
+    if (!g_window || !g_shader.is_valid())
+    {
+        return;
+    }
+
+    render_air_mask(params, fields.air_mask);
+
     render_cube(params.light_direction,
                 params.light_color,
                 params.object_color);
 }
 
-void end_frame()
+void render_air_mask(const Params& params, const Field2D<std::uint8_t>& air_mask)
 {
-    if (!g_window)
+    // The air-mask overlay is a fixed-resolution grid that maps the simulation's
+    // Field2D<uint8_t> (1 = air, 0 = ground) to per-vertex colors. We set this up once
+    // and, every frame, only stream the color buffer.
+
+    if (!g_window || !g_shader.is_valid())
     {
-        return;
+        return; // guard: renderer not initialized or shader failed to link
     }
 
-    glfwSwapBuffers(g_window);
+    // Translate mask -> colors into the staging buffer. We keep this as scalars (0/1)
+    // and let GridMesh2D expand to vec3 in update_cell_colors.
+    for (std::size_t j = 0; j < air_mask.ny; ++j)
+    {
+        for (std::size_t i = 0; i < air_mask.nx; ++i)
+        {
+            const float value = (air_mask.in_bounds(i, j) && air_mask(i, j) != 0) ? 1.0f : 0.0f;
+            g_air_mask_buffer[j * air_mask.nx + i] = value;
+        }
+    }
+
+    // Upload per-cell colors to the GPU and draw with vertex colors enabled.
+    g_air_mask_mesh.update_cell_colors(g_air_mask_buffer);
+
+    g_shader.bind();
+    const glm::mat4 model(1.0f);
+    g_shader.set_uniform("uModel", model);
+    g_shader.set_uniform("uView", view_matrix());
+    g_shader.set_uniform("uProjection", projection_matrix());
+    g_shader.set_uniform("uLightDirection", params.light_direction);
+    g_shader.set_uniform("uLightColor", params.light_color);
+    g_shader.set_uniform("uObjectColor", glm::vec3(1.0f));
+    g_shader.set_uniform("uViewPos", camera_position());
+    g_shader.set_uniform("uUseVertexColor", 1);
+
+    g_air_mask_mesh.draw();
+
+    // Restore default for subsequent draws (e.g., lit cube uses uniform color).
+    g_shader.set_uniform("uUseVertexColor", 0);
 }
 
 void render_cube(const glm::vec3& light_direction,
@@ -241,6 +302,16 @@ void render_cube(const glm::vec3& light_direction,
     g_shader.set_uniform("uViewPos", camera_position());
 
     g_cube_mesh.draw();
+}
+
+void end_frame()
+{
+    if (!g_window)
+    {
+        return;
+    }
+
+    glfwSwapBuffers(g_window);
 }
 
 glm::mat4 view_matrix()
