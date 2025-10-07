@@ -30,10 +30,12 @@ find_package(OpenGL REQUIRED)
 
 add_executable(snow_sim_app
   src/main.cpp
+  src/my_helper.cpp
   viz/renderer.cpp
   viz/gl.c
   viz/shader_program.cpp
   viz/cube_mesh.cpp
+  viz/arrow_layer.cpp
   viz/grid_mesh.cpp
   viz/camera.cpp
 )
@@ -60,6 +62,8 @@ target_link_libraries(snow_sim_app PRIVATE
   uuid.lib
   winmm.lib
 )
+# TODO: replace the prebuilt GLFW binary with one compiled against the same MSVC runtime to silence the LNK4098 warning.
+# TODO: replace prebuilt GLFW binary with a version built using the same MSVC runtime to remove LNK4098 warning.
 
 set(GLFW_DLL ${CMAKE_SOURCE_DIR}/external/glfw3.dll)
 if(EXISTS ${GLFW_DLL})

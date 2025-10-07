@@ -9,13 +9,13 @@ namespace snow {
 namespace viz {
 
 Camera::Camera()
-    : position_(0.0f, 0.0f, 3.0f),
+    : position_(0.0f, 0.0f, 7.0f),
       front_(0.0f, 0.0f, -1.0f),
       up_(0.0f, 1.0f, 0.0f),
       world_up_(0.0f, 1.0f, 0.0f),
       yaw_(-90.0f),
       pitch_(0.0f),
-      movement_speed_(5.0f),
+      movement_speed_(10.0f),
       mouse_sensitivity_(0.1f),
       zoom_(45.0f)
 {

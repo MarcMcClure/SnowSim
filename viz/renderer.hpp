@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <glm/glm/glm.hpp>
 
@@ -19,7 +20,11 @@ void begin_frame();
 void render_frame(const snow::Params& params, const snow::Fields& fields);
 void end_frame();
 
+void initialize_air_mask_resources(std::size_t rows, std::size_t cols);
+void initialize_arrow_resources(std::size_t rows, std::size_t cols);
+
 void render_air_mask(const snow::Params& params, const snow::Field2D<std::uint8_t>& air_mask);
+void render_arrows(const snow::Params& params, const snow::Fields& fields);
 void render_cube(const glm::vec3& light_direction,
                  const glm::vec3& light_color,
                  const glm::vec3& object_color);

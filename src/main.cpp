@@ -3,6 +3,7 @@
 #include <cmath>
 #include <glm/glm/glm.hpp>
 #include "types.hpp"
+#include "my_helper.hpp"
 #include "simulation.hpp"
 #include "cpu_backend.hpp"
 // Safe to include: provides CPU fallback when SNOWSIM_HAS_CUDA == 0
@@ -18,10 +19,11 @@ int main()
     #pragma region
 
     Params params{};
-    params.wind_speed = 4.9f;               // m/sec
+    params.wind_speed = 30.0f;               // m/sec
     params.settling_speed = 0.06f;          // m/sec
     params.precipitation_rate = 0.1f;       // g/m^2/sec
     params.settaled_snow_density = 200000;  // g/m^2
+    //TODO: remove ground height
     params.ground_height = 30.0f;           // m above y=0
 
     params.Lx = 1000.0f; // meters
@@ -32,9 +34,9 @@ int main()
     params.nx = static_cast<std::size_t>(std::lround(params.Lx / params.dx));
     params.ny = static_cast<std::size_t>(std::lround(params.Ly / params.dy));
 
-    params.total_sim_time = 1.0f  * 3600.0f;    //sec
+    params.total_sim_time = 10.0f  * 3600.0f;    //sec
     params.time_step_duration = 0.2f;           //sec
-    params.steps_per_frame = 100;
+    params.steps_per_frame = 20;
 
     params.total_time_steps = static_cast<int>(std::lround(params.total_sim_time / params.time_step_duration));
 
@@ -46,37 +48,8 @@ int main()
     // Define physical domain and discretization, setting up fields
     #pragma region
     Fields fields;
-    fields.air_mask = Field2D<uint8_t>(params.nx, params.ny, 1);
 
-    // ground mask where the ground is a parabola with a minimum of params.ground ans a max of params.Ly - params.ground
-    // const float vertex_x = 0.5f * params.Lx;
-    // const float vertex_y = params.ground_height;
-    // const float edge_height = params.Ly - params.ground_height;
-    // const float denom = vertex_x * vertex_x;
-    // const float a = denom > 0.0f ? (edge_height - vertex_y) / denom : 0.0f;
-
-    // for (std::size_t i = 0; i < fields.air_mask.nx; ++i)
-    // {
-    //     const float x_center = (static_cast<float>(i) + 0.5f) * params.dx;
-    //     const float ground_y = a * (x_center - vertex_x) * (x_center - vertex_x) + vertex_y;
-
-    //     for (std::size_t j = 0; j < fields.air_mask.ny; ++j)
-    //     {
-    //         const float cell_center_y = (static_cast<float>(j) + 0.5f) * params.dy;
-    //         if (cell_center_y <= ground_y)
-    //         {
-    //             fields.air_mask(i, j) = 0;
-    //         }
-    //     }
-    // }
-
-    // ground mask where the ground is a flat plain at params.ground level
-    for (std::size_t i = 0; i < fields.air_mask.nx; i++){
-        for (std::size_t j = 0; j < fields.air_mask.ny; j++){
-            if((j + 0.5f)*params.dy <= params.ground_height) fields.air_mask(i,j) = 0;
-            else continue;
-        }
-    }
+    fields.air_mask = air_mask_slope_up(params, 0.0f, 100.0f);
     fields.snow_density = Field2D<float>(params.nx, params.ny);
     fields.next_snow_density = Field2D<float>(params.nx, params.ny);
     fields.snow_transport_speed_x = Field2D<float>(params.nx + 1, params.ny, params.wind_speed);
@@ -125,6 +98,11 @@ int main()
     if (!viz_ready)
     {
         std::cerr << "[viz] Visualization disabled.\n";
+    }
+    else
+    {
+        viz::initialize_air_mask_resources(fields.air_mask.ny, fields.air_mask.nx);
+        viz::initialize_arrow_resources(fields.air_mask.ny, fields.air_mask.nx);
     }
 
 // compile with both backends then choose which one to use at run time
@@ -181,6 +159,7 @@ int main()
         if (ceilf(t * params.time_step_duration / 60.0f) != ceilf((t + 1) * params.time_step_duration / 60.0f))    
         {
             std::cout << t*params.time_step_duration/60 << " min into sim\n"; 
+            std::cout << fields.snow_density(params.nx/2,params.ny/2) << " central snow density\n"; 
         }
 
         sim.step(fields, params);
@@ -207,11 +186,11 @@ int main()
         }
     }
 
-    std::cout << "accumulated snow" << ":\n";
-    for (int i = 0; i < params.nx; i++) {
-        std::cout << fields.snow_accumulation_mass(i) << "\n";
-    }
-    std::cout << "\n";
+    // std::cout << "accumulated snow" << ":\n";
+    // for (int i = 0; i < params.nx; i++) {
+    //     std::cout << fields.snow_accumulation_mass(i) << "\n";
+    // }
+    // std::cout << "\n";
 
     if (viz_ready)
     {
