@@ -52,9 +52,12 @@ namespace {
     const std::string kShaderDir = "resources/shaders/";
     constexpr float simWidthInModelSpace = 100.0f;
     constexpr GLuint kAirMaskTextureUnit = 0;
+    // TODO: rename k-prefixed constants to snake_case for consistency.
+    // TODO: support rectangular visualization cells (distinct width/height).
     constexpr float kArrowPlaneZ = 0.1f;           // arrows sit 0.1 units in front of the mask
-    constexpr float kArrowDensityMax = 1.0e-4f;    // density mapped to red
-    constexpr float kArrowReferenceWind = 100.0f;  // wind magnitude that yields half-cell arrow length
+    constexpr float kArrowDensityMax = 2.0e-0f;    // density mapped to red
+    constexpr float kArrowReferenceWind = 60.0f;  // wind magnitude that yields half-cell arrow length
+    constexpr float kArrowMinLen = 0.1f;  // minimum arrow length as a percentage of the cell width
 
     void frame_buffer_size_callback(GLFWwindow*, int width, int height)
     {
@@ -180,7 +183,7 @@ void initialize_air_mask_resources(std::size_t rows, std::size_t cols)
 {
     if (!g_window)
     {
-        return; // No context → nothing to do.
+        return; // No context ? nothing to do.
     }
 
     if (g_air_mask_initialized)
@@ -207,7 +210,7 @@ void initialize_air_mask_resources(std::size_t rows, std::size_t cols)
     g_air_mask_texture_data.assign(rows * cols, 0); // Allocate staging buffer (one byte per cell).
 
     g_air_mask_shader.bind();
-    g_air_mask_shader.set_uniform("uMaskTexture", static_cast<int>(kAirMaskTextureUnit)); // sampler2D → texture unit mapping.
+    g_air_mask_shader.set_uniform("uMaskTexture", static_cast<int>(kAirMaskTextureUnit)); // sampler2D ? texture unit mapping.
     g_air_mask_shader.set_uniform("uAirColor", glm::vec3(0.2f, 0.5f, 0.9f));             // Default air color.
     g_air_mask_shader.set_uniform("uGroundColor", glm::vec3(0.5f, 0.35f, 0.1f));          // Default ground color.
     glUseProgram(0);
@@ -302,6 +305,7 @@ void process_input()
 
     update_timing();
 
+    // TODO: Update ESC handling so it releases the cursor but leaves the window running.
     if (glfwGetKey(g_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(g_window, GLFW_TRUE);
@@ -423,6 +427,7 @@ void render_arrows(const Params& params, const Fields& fields)
         const std::size_t field_row = rows - 1 - j;
         for (std::size_t i = 0; i < cols; ++i, ++instance_index)
         {
+            //TODO: might need to flip horozontally here
             ArrowLayer::InstanceData data{};
 
             const bool is_air = fields.air_mask.in_bounds(i, field_row) && fields.air_mask(i, field_row) != 0;
@@ -464,7 +469,7 @@ void render_arrows(const Params& params, const Fields& fields)
                 vy /= static_cast<float>(samples_y);
             }
 
-            data.direction = glm::vec2(vx, -vy);
+            data.direction = glm::vec2(vx, vy);
 
             float magnitude = std::sqrt(vx * vx + vy * vy);
             float length = magnitude * inv_reference_wind;
@@ -472,6 +477,14 @@ void render_arrows(const Params& params, const Fields& fields)
             {
                 length = 0.0f;
                 data.direction = glm::vec2(1.0f, 0.0f);
+            }
+            else
+            {
+                const float minimum_arrow_length = cell_size * kArrowMinLen; // enforce a visible baseline arrow length.
+                if (length < minimum_arrow_length)
+                {
+                    length = minimum_arrow_length;
+                }
             }
 
             data.length = length;
@@ -551,3 +564,4 @@ bool visualizer_is_closed()
 
 } // namespace viz
 } // namespace snow
+

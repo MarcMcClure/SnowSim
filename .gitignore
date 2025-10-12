@@ -4,6 +4,7 @@ cmake-build*/
 
 # planing docs
 planning_docs/
+STYLE_GUIDE.md
 
 # external libraries (glad,glfw, and glm)
 external/
@@ -38,4 +39,3 @@ external/
 Thumbs.db
 *.swp
 *.tmp
-

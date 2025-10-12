@@ -19,8 +19,8 @@ int main()
     #pragma region
 
     Params params{};
-    params.wind_speed = 30.0f;               // m/sec
-    params.settling_speed = 0.06f;          // m/sec
+    params.wind_speed = 31.0f;               // m/sec
+    params.settling_speed = 0.52f;          // m/sec
     params.precipitation_rate = 0.1f;       // g/m^2/sec
     params.settaled_snow_density = 200000;  // g/m^2
     //TODO: remove ground height
@@ -34,9 +34,9 @@ int main()
     params.nx = static_cast<std::size_t>(std::lround(params.Lx / params.dx));
     params.ny = static_cast<std::size_t>(std::lround(params.Ly / params.dy));
 
-    params.total_sim_time = 10.0f  * 3600.0f;    //sec
-    params.time_step_duration = 0.2f;           //sec
-    params.steps_per_frame = 20;
+    params.total_sim_time = 3.1f  * 3600.0f;    //sec
+    params.time_step_duration = 0.01f;           //sec
+    params.steps_per_frame = 60;
 
     params.total_time_steps = static_cast<int>(std::lround(params.total_sim_time / params.time_step_duration));
 
@@ -49,15 +49,17 @@ int main()
     #pragma region
     Fields fields;
 
-    fields.air_mask = air_mask_slope_up(params, 0.0f, 100.0f);
+    // fields.air_mask = air_mask_slope_up(params, 0.0f, 100.0f);
+    fields.air_mask = air_mask_flat(params, 25.0f);
     fields.snow_density = Field2D<float>(params.nx, params.ny);
     fields.next_snow_density = Field2D<float>(params.nx, params.ny);
     fields.snow_transport_speed_x = Field2D<float>(params.nx + 1, params.ny, params.wind_speed);
     fields.snow_transport_speed_y = Field2D<float>(params.nx, params.ny + 1, -params.settling_speed);
     fields.precipitation_source = Field1D<float>(params.nx, params.precipitation_rate);
+    fields.windborn_horizontal_source_right = Field1D<float>(params.ny, 0.0f);
     // Inflow at x=0: match the supplied precipitation with the local vertical motion,
     // then scale by the upwind horizontal speed to get the steady-state lateral source term (g/(m^2*s)).
-    fields.windborn_horizontal_source = Field1D<float>(params.ny, 0.0f);
+    fields.windborn_horizontal_source_left = Field1D<float>(params.ny, 0.0f);
     Field1D<float> boundary_base_flux(params.ny, 0.0f);
     Field1D<float> boundary_arrival_top(params.ny, 0.0f);
     Field1D<float> boundary_cross_time(params.ny, 0.0f);
@@ -95,6 +97,8 @@ int main()
     #pragma endregion
 
     const bool viz_ready = viz::initialize(1280, 720, "SnowSim Preview");
+    // const bool viz_ready = false;
+
     if (!viz_ready)
     {
         std::cerr << "[viz] Visualization disabled.\n";
@@ -136,6 +140,11 @@ int main()
     // TODO: configure GLAD/OpenGL state for visualization once rendering is implemented 
     // TODO: if you need textures use stb_image.h not SOIL2. I know its what you did in class but its old AF.
     // sim loop
+    
+    // TODO: for debug remove when working
+    // params.settling_speed = 0.0f;          // m/sec    
+    // fields.snow_transport_speed_y = Field2D<float>(params.nx, params.ny + 1, 0);
+
     for (int t = 0; t < params.total_time_steps; ++t)
     {
         if (viz_ready)
@@ -159,12 +168,24 @@ int main()
         if (ceilf(t * params.time_step_duration / 60.0f) != ceilf((t + 1) * params.time_step_duration / 60.0f))    
         {
             std::cout << t*params.time_step_duration/60 << " min into sim\n"; 
-            std::cout << fields.snow_density(params.nx/2,params.ny/2) << " central snow density\n"; 
+            // std::cout << t*params.time_step_duration << " sec into sim\n"; 
+            // std::cout << fields.snow_density(params.nx/2,params.ny/2) << " central snow density\n"; 
+            if (int(ceilf(t * params.time_step_duration / 60.0f)) % 1 == 0)    
+            {
+                // std::cout << "total sim size = (" << params.nx << ", " << params.ny << ")\n"; 
+                // std::cout << "density field 15 minutes into sim\n"; 
+                print_field_subregion(fields.snow_density,10,15,10,20);
+                // print_field_subregion(fields.next_snow_density,10,15,0,10);
+                // print_field_subregion(fields.snow_transport_speed_x, 10, 20, 0, 10);
+                // std::cout << "snow density at (20,10): " << fields.snow_density.idx(19,9) << "\n"; 
+            }
         }
+
+        // print_field_subregion(fields.snow_density,0,50,17,20);
 
         sim.step(fields, params);
 
-        // TODO: break windborn_horizontal_source ramp up into its own function
+        // TODO: break windborn_horizontal_source_left ramp up into its own function
         // Accumulate simulation time and adjust boundary inflow to mimic the infinite upwind snowfall column.
         elapsed_time += params.time_step_duration;
 
@@ -176,12 +197,12 @@ int main()
             }
             if (elapsed_time >= boundary_arrival_top(j) + boundary_cross_time(j)) //if snow has reached the bottom of the row
             {
-                fields.windborn_horizontal_source(j) = boundary_base_flux(j);
+                fields.windborn_horizontal_source_left(j) = boundary_base_flux(j);
             }
             else //if snow has reached the top but not the bottom of the row
             {
                 const float ramp = std::clamp((elapsed_time - boundary_arrival_top(j)) / boundary_cross_time(j), 0.0f, 1.0f);
-                fields.windborn_horizontal_source(j) = boundary_base_flux(j) * ramp;
+                fields.windborn_horizontal_source_left(j) = boundary_base_flux(j) * ramp;
             }
         }
     }

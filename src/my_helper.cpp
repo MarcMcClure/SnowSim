@@ -1,11 +1,17 @@
 
 #include "my_helper.hpp"
 
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <utility>
+
 #include "types.hpp"
 
 namespace snow{
 
-Field2D<uint8_t> air_mask_flat(Params params, float distince_from_bottom){
+Field2D<uint8_t> air_mask_flat(const Params& params, float distince_from_bottom){
     //safty checks
     if(distince_from_bottom > params.Ly) distince_from_bottom = params.Ly;
     if(distince_from_bottom < 0) distince_from_bottom = 0;
@@ -21,7 +27,7 @@ Field2D<uint8_t> air_mask_flat(Params params, float distince_from_bottom){
     return air_mask;
 }
 
-Field2D<uint8_t> air_mask_slope_up(Params params, float distince_from_bottom_left, float distince_from_top_right)
+Field2D<uint8_t> air_mask_slope_up(const Params& params, float distince_from_bottom_left, float distince_from_top_right)
 {
     
     //safty checks
@@ -45,7 +51,7 @@ Field2D<uint8_t> air_mask_slope_up(Params params, float distince_from_bottom_lef
 }
 // TODO: change docs to reflect function inputs and outputs
 // ground mask where the ground is a parabola with a minimum of params.ground ans a max of params.Ly - params.ground
-Field2D<uint8_t> air_mask_parabolic(Params params, float distince_from_bottom_center, float distince_from_top_edge)
+Field2D<uint8_t> air_mask_parabolic(const Params& params, float distince_from_bottom_center, float distince_from_top_edge)
 {
     
     //safty checks
@@ -76,5 +82,126 @@ Field2D<uint8_t> air_mask_parabolic(Params params, float distince_from_bottom_ce
         }
     }
     return air_mask;
+}
+
+// Prints a rectangular slice of a Field2D with consistent formatting for debugging.
+void print_field_subregion(const Field2D<float>& field,
+                           std::ptrdiff_t x_min,
+                           std::ptrdiff_t x_max,
+                           std::ptrdiff_t y_min,
+                           std::ptrdiff_t y_max)
+{
+    if (field.nx == 0 || field.ny == 0)
+    {
+        // Guard against empty fields so downstream code does not attempt to index them.
+        std::cout << "[print_field_subregion] empty field\n";
+        return;
+    }
+
+    // Reorder min/max inputs so lower bounds precede upper bounds before clamping.
+    std::ptrdiff_t x_lower = std::min(x_min, x_max);
+    std::ptrdiff_t x_upper = std::max(x_min, x_max);
+    std::ptrdiff_t y_lower = std::min(y_min, y_max);
+    std::ptrdiff_t y_upper = std::max(y_min, y_max);
+
+    const std::ptrdiff_t max_x_index = static_cast<std::ptrdiff_t>(field.nx - 1);
+    const std::ptrdiff_t max_y_index = static_cast<std::ptrdiff_t>(field.ny - 1);
+
+    // Clamp the requested subregion to the valid grid extents.
+    x_lower = std::clamp(x_lower, static_cast<std::ptrdiff_t>(0), max_x_index);
+    x_upper = std::clamp(x_upper, static_cast<std::ptrdiff_t>(0), max_x_index);
+    y_lower = std::clamp(y_lower, static_cast<std::ptrdiff_t>(0), max_y_index);
+    y_upper = std::clamp(y_upper, static_cast<std::ptrdiff_t>(0), max_y_index);
+
+    if (x_lower > x_upper || y_lower > y_upper)
+    {
+        // Degenerate subregions collapse to an empty printout.
+        std::cout << "[print_field_subregion] empty range after clamping\n";
+        return;
+    }
+
+    // Announce which subregion is being displayed.
+    std::cout << "Field2D subregion x[" << x_lower << ", " << x_upper
+              << "] y[" << y_lower << ", " << y_upper << "]\n";
+
+    // Buffer formatted strings to compute column widths before printing.
+    std::vector<std::vector<std::pair<bool, std::string>>> formatted_values;
+    formatted_values.reserve(static_cast<std::size_t>(y_upper - y_lower + 1));
+
+    std::size_t max_entry_width = 0;
+
+    for (std::ptrdiff_t row = y_upper; row >= y_lower; --row)
+    {
+        // Store per-cell data for the current row so it can be printed later.
+        std::vector<std::pair<bool, std::string>> row_values;
+        row_values.reserve(static_cast<std::size_t>(x_upper - x_lower + 1));
+
+        const std::size_t row_index = static_cast<std::size_t>(row);
+
+        for (std::ptrdiff_t column = x_lower; column <= x_upper; ++column)
+        {
+            const std::size_t column_index = static_cast<std::size_t>(column);
+            const float value = field(column_index, row_index);
+            const bool is_zero = value == 0.0f;
+
+            std::string formatted;
+            if (!is_zero)
+            {
+                // Non-zero values use scientific notation with two significant figures.
+                std::ostringstream stream;
+                stream.setf(std::ios::scientific);
+                stream << std::setprecision(1) << static_cast<double>(value);
+                formatted = stream.str();
+                max_entry_width = std::max(max_entry_width, formatted.size());
+            }
+
+            row_values.emplace_back(is_zero, std::move(formatted));
+        }
+
+        formatted_values.emplace_back(std::move(row_values));
+    }
+
+    if (max_entry_width == 0)
+    {
+        // When every cell is zero we still want a single-character column.
+        max_entry_width = 1;
+    }
+
+    for (std::size_t row = 0; row < formatted_values.size(); ++row)
+    {
+        const std::ptrdiff_t actual_row = y_upper - static_cast<std::ptrdiff_t>(row);
+
+        // print row headers
+        int header_length = 10; 
+        std::string unpadded = "y=" + std::to_string(actual_row) + " -> ";
+        std::string padded = unpadded + std::string(header_length - unpadded.size(), ' ');
+        std::cout << padded;
+
+        const auto& row_values = formatted_values[row];
+        for (std::size_t column = 0; column < row_values.size(); ++column)
+        {
+            const bool is_zero = row_values[column].first;
+            const std::string& formatted = row_values[column].second;
+
+            if (is_zero)
+            {
+                // Keep zero entries aligned with their scientific neighbors.
+                std::cout << '0' << std::setw(static_cast<int>(max_entry_width));
+            }
+            else
+            {
+                std::cout << std::setw(static_cast<int>(max_entry_width)) << formatted;
+            }
+
+            if (column + 1u < row_values.size())
+            {
+                // Separating columns with a single space improves readability.
+                std::cout << ' ';
+            }
+        }
+
+        std::cout << '\n';
+    }
+    std::cout.flush();
 }
 } // namespace snow

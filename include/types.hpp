@@ -137,7 +137,8 @@ namespace snow
     };
 
     //wind speeds are shifted left and down respectivly such that the edges suroudning snow_density(x,y)
-    //will be at wind_speed_x(x,y),wind_speed_x(x+1,y),wind_speed_y(x,y),wind_speed_y(x,y+1)
+    //will be at wind_speed_x(x,y) [left],wind_speed_x(x+1,y) [right],wind_speed_y(x,y) [bottom], wind_speed_y(x,y+1) [top].
+    //wind is positive when blowing to the right and up.
     struct Fields
     {
         Field2D<std::uint8_t> air_mask;     // 1 = air, 0 = land
@@ -148,7 +149,8 @@ namespace snow
         Field1D<float> snow_accumulation_mass;   // accumulated snow mass on ground       g
         Field1D<float> snow_accumulation_density;   // on ground                     g/m^2
         Field1D<float> precipitation_source;  // rate of precipitation                 g/m^2/s
-        Field1D<float> windborn_horizontal_source;// rate at which snow flows in from x=0  g/m^2/s
+        Field1D<float> windborn_horizontal_source_left;// rate at which snow flows in from x=0  g/m^2/s
+        Field1D<float> windborn_horizontal_source_right;// rate at which snow flows in from x=nx  g/m^2/s
     };
 
 } // namespace snow
