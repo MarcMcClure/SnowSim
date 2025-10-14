@@ -48,6 +48,8 @@ namespace {
     bool g_first_mouse = true;
     double g_last_x = 0.0;
     double g_last_y = 0.0;
+    bool g_cursor_captured = false;
+    bool g_escape_was_pressed = false;
 
     const std::string kShaderDir = "resources/shaders/";
     constexpr float simWidthInModelSpace = 100.0f;
@@ -135,6 +137,7 @@ bool initialize(std::int32_t width, std::int32_t height, const char* title)
     glfwSetScrollCallback(g_window, scroll_callback);
     glfwSwapInterval(1);
     glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    g_cursor_captured = true;
 
     if (!gladLoadGL(glfwGetProcAddress))
     {
@@ -305,10 +308,28 @@ void process_input()
 
     update_timing();
 
-    // TODO: Update ESC handling so it releases the cursor but leaves the window running.
-    if (glfwGetKey(g_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    const bool escape_pressed = glfwGetKey(g_window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+    if (escape_pressed && !g_escape_was_pressed && g_cursor_captured)
     {
-        glfwSetWindowShouldClose(g_window, GLFW_TRUE);
+        glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        g_cursor_captured = false;
+    }
+    g_escape_was_pressed = escape_pressed;
+
+    if (!g_cursor_captured)
+    {
+        if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+        {
+            glfwSetInputMode(g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            g_cursor_captured = true;
+            g_first_mouse = true;
+            double cursor_x = 0.0;
+            double cursor_y = 0.0;
+            glfwGetCursorPos(g_window, &cursor_x, &cursor_y);
+            g_last_x = cursor_x;
+            g_last_y = cursor_y;
+        }
+        return;
     }
 
     g_camera.update(g_window, g_delta_time);

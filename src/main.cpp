@@ -19,22 +19,22 @@ int main()
     #pragma region
 
     Params params{};
-    params.wind_speed = 31.0f;               // m/sec
+    params.wind_speed = 1.70f;               // m/sec
     params.settling_speed = 0.52f;          // m/sec
     params.precipitation_rate = 0.1f;       // g/m^2/sec
     params.settaled_snow_density = 200000;  // g/m^2
     //TODO: remove ground height
     params.ground_height = 30.0f;           // m above y=0
 
-    params.Lx = 1000.0f; // meters
-    params.Ly = 200.0f;  // meters
+    params.Lx = 150.0f; // meters
+    params.Ly = 150.0f;  // meters
     params.dx = 10.0f;   // meters
     params.dy = 10.0f;   // meters
 
     params.nx = static_cast<std::size_t>(std::lround(params.Lx / params.dx));
     params.ny = static_cast<std::size_t>(std::lround(params.Ly / params.dy));
 
-    params.total_sim_time = 3.1f  * 3600.0f;    //sec
+    params.total_sim_time = 10.0f  * 3600.0f;    //sec
     params.time_step_duration = 0.01f;           //sec
     params.steps_per_frame = 60;
 
@@ -59,41 +59,49 @@ int main()
     fields.windborn_horizontal_source_right = Field1D<float>(params.ny, 0.0f);
     // Inflow at x=0: match the supplied precipitation with the local vertical motion,
     // then scale by the upwind horizontal speed to get the steady-state lateral source term (g/(m^2*s)).
+    // fields.windborn_horizontal_source_left = Field1D<float>(params.ny, 0.0f);
+    // Field1D<float> boundary_base_flux(params.ny, 0.0f);
+    // Field1D<float> boundary_arrival_top(params.ny, 0.0f);
+    // Field1D<float> boundary_cross_time(params.ny, 0.0f);
+    // {
+    //     // TODO: if settling speed, wind, or precipitation change over time this precomputation must be recomputed.
+    //     const float abs_settling_speed = std::fabs(params.settling_speed);
+    //     // Precompute arrival timings so the boundary inflow ramps while the falling column passes through each row.
+    //     for (std::size_t j = 0; j < params.ny; ++j)
+    //     {
+    //         const float vy_bottom = fields.snow_transport_speed_y(0, j);
+    //         const float vy_top = fields.snow_transport_speed_y(0, j + 1);
+    //         const float vy_avg = 0.5f * (vy_bottom + vy_top); // boundary vertical velocity (m/s)
+    //         const float abs_vy = std::fabs(vy_avg);
+    //         const float vy_mag = abs_vy > 1e-6f ? abs_vy : 1e-6f; // prevent divide-by-zero
+    //         const float ux = fields.snow_transport_speed_x(0, j); // left boundary face (m/s)
+    //         const float ux_in = ux > 0.0f ? ux : 0.0f; // only inflow contributes
+    //         const float lateral_scale = ux_in / vy_mag; // dimensionless ratio of speeds
+    //         const bool is_air = fields.air_mask(0, j) != 0;
+
+    //         boundary_base_flux(j) = is_air ? params.precipitation_rate * lateral_scale : 0.0f; // g/(m^2*s)
+
+    //         const float cell_top_y = (static_cast<float>(j) + 1.0f) * params.dy;
+    //         const float distance_to_cell_top = std::max(0.0f, params.Ly - cell_top_y);
+    //         boundary_arrival_top(j) =
+    //             (abs_settling_speed > 1e-6f) ? distance_to_cell_top / abs_settling_speed : 0.0f; // snow reaches top of cell j
+
+    //         boundary_cross_time(j) =
+    //             (abs_settling_speed > 1e-6f) ? (params.dy / abs_settling_speed) : 0.0f; // time to traverse a full cell
+    //     }
+    // }
+    // float elapsed_time = 0.0f;
+    // setting up sorce left sorce vector and vector helper variables
     fields.windborn_horizontal_source_left = Field1D<float>(params.ny, 0.0f);
-    Field1D<float> boundary_base_flux(params.ny, 0.0f);
-    Field1D<float> boundary_arrival_top(params.ny, 0.0f);
-    Field1D<float> boundary_cross_time(params.ny, 0.0f);
-    {
-        // TODO: if settling speed, wind, or precipitation change over time this precomputation must be recomputed.
-        const float abs_settling_speed = std::fabs(params.settling_speed);
-        // Precompute arrival timings so the boundary inflow ramps while the falling column passes through each row.
-        for (std::size_t j = 0; j < params.ny; ++j)
-        {
-            const float vy_bottom = fields.snow_transport_speed_y(0, j);
-            const float vy_top = fields.snow_transport_speed_y(0, j + 1);
-            const float vy_avg = 0.5f * (vy_bottom + vy_top); // boundary vertical velocity (m/s)
-            const float abs_vy = std::fabs(vy_avg);
-            const float vy_mag = abs_vy > 1e-6f ? abs_vy : 1e-6f; // prevent divide-by-zero
-            const float ux = fields.snow_transport_speed_x(0, j); // left boundary face (m/s)
-            const float ux_in = ux > 0.0f ? ux : 0.0f; // only inflow contributes
-            const float lateral_scale = ux_in / vy_mag; // dimensionless ratio of speeds
-            const bool is_air = fields.air_mask(0, j) != 0;
+    Field1D<float> left_boundary_column_prev(params.ny, 0.0f);
+    Field1D<float> left_boundary_column_next(params.ny, 0.0f);
+    const float inverse_time_step = params.time_step_duration > 0.0f
+        ? 1.0f / params.time_step_duration
+        : 0.0f;
 
-            boundary_base_flux(j) = is_air ? params.precipitation_rate * lateral_scale : 0.0f; // g/(m^2*s)
-
-            const float cell_top_y = (static_cast<float>(j) + 1.0f) * params.dy;
-            const float distance_to_cell_top = std::max(0.0f, params.Ly - cell_top_y);
-            boundary_arrival_top(j) =
-                (abs_settling_speed > 1e-6f) ? distance_to_cell_top / abs_settling_speed : 0.0f; // snow reaches top of cell j
-
-            boundary_cross_time(j) =
-                (abs_settling_speed > 1e-6f) ? (params.dy / abs_settling_speed) : 0.0f; // time to traverse a full cell
-        }
-    }
     fields.snow_accumulation_mass = Field1D<float>(params.nx);
     fields.snow_accumulation_density = Field1D<float>(params.nx,params.settaled_snow_density);
 
-    float elapsed_time = 0.0f;
     #pragma endregion
 
     const bool viz_ready = viz::initialize(1280, 720, "SnowSim Preview");
@@ -174,7 +182,7 @@ int main()
             {
                 // std::cout << "total sim size = (" << params.nx << ", " << params.ny << ")\n"; 
                 // std::cout << "density field 15 minutes into sim\n"; 
-                print_field_subregion(fields.snow_density,10,15,10,20);
+                print_field_subregion(fields.snow_density,0,20,0,20);
                 // print_field_subregion(fields.next_snow_density,10,15,0,10);
                 // print_field_subregion(fields.snow_transport_speed_x, 10, 20, 0, 10);
                 // std::cout << "snow density at (20,10): " << fields.snow_density.idx(19,9) << "\n"; 
@@ -187,24 +195,51 @@ int main()
 
         // TODO: break windborn_horizontal_source_left ramp up into its own function
         // Accumulate simulation time and adjust boundary inflow to mimic the infinite upwind snowfall column.
-        elapsed_time += params.time_step_duration;
+        // elapsed_time += params.time_step_duration;
+
+        // for (std::size_t j = 0; j < params.ny; ++j)
+        // {
+        //     if (boundary_base_flux(j) <= 0.0f || elapsed_time < boundary_arrival_top(j)) //if snow has not reached row or the max sorce value is 0
+        //     {
+        //         continue;
+        //     }
+        //     if (elapsed_time >= boundary_arrival_top(j) + boundary_cross_time(j)) //if snow has reached the bottom of the row
+        //     {
+        //         fields.windborn_horizontal_source_left(j) = boundary_base_flux(j);
+        //     }
+        //     else //if snow has reached the top but not the bottom of the row
+        //     {
+        //         const float ramp = std::clamp((elapsed_time - boundary_arrival_top(j)) / boundary_cross_time(j), 0.0f, 1.0f);
+        //         fields.windborn_horizontal_source_left(j) = boundary_base_flux(j) * ramp;
+        //     }
+        // }
+
+        // incrementing/ramping left boundry sorce
+        left_boundary_column_next = step_snow_source(left_boundary_column_prev,
+                                                     params.settling_speed,
+                                                     params.precipitation_rate,
+                                                     params.dy,
+                                                     params.time_step_duration);
 
         for (std::size_t j = 0; j < params.ny; ++j)
         {
-            if (boundary_base_flux(j) <= 0.0f || elapsed_time < boundary_arrival_top(j)) //if snow has not reached row or the max sorce value is 0
+            if (!fields.air_mask(0, j))
             {
+                fields.windborn_horizontal_source_left(j) = 0.0f;
                 continue;
             }
-            if (elapsed_time >= boundary_arrival_top(j) + boundary_cross_time(j)) //if snow has reached the bottom of the row
+
+            const float column_density = left_boundary_column_next(j);
+            if (params.wind_speed <= 0.0f || params.dx <= 0.0f)
             {
-                fields.windborn_horizontal_source_left(j) = boundary_base_flux(j);
+                fields.windborn_horizontal_source_left(j) = 0.0f;
+                continue;
             }
-            else //if snow has reached the top but not the bottom of the row
-            {
-                const float ramp = std::clamp((elapsed_time - boundary_arrival_top(j)) / boundary_cross_time(j), 0.0f, 1.0f);
-                fields.windborn_horizontal_source_left(j) = boundary_base_flux(j) * ramp;
-            }
+
+            fields.windborn_horizontal_source_left(j) = params.wind_speed * column_density / params.dx;
         }
+
+        left_boundary_column_prev = left_boundary_column_next;
     }
 
     // std::cout << "accumulated snow" << ":\n";

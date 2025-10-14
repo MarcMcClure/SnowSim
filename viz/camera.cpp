@@ -59,7 +59,7 @@ glm::mat4 Camera::view_matrix() const
 
 glm::mat4 Camera::projection_matrix(float aspect) const
 {
-    return glm::perspective(glm::radians(zoom_), aspect, 0.1f, 100.0f);
+    return glm::perspective(glm::radians(zoom_), aspect, 0.1f, 500.0f);
 }
 
 glm::vec3 Camera::position() const

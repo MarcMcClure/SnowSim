@@ -16,4 +16,13 @@ void print_field_subregion(const Field2D<float>& field,
                            std::ptrdiff_t y_min,
                            std::ptrdiff_t y_max);
 
+// Advances a one-dimensional snow column by a single time step so that the
+// left-boundary source matches the settling/precipitation behaviour used by the
+// main simulation loop.
+Field1D<float> step_snow_source(const Field1D<float>& column_density,
+                                float settling_speed,
+                                float precipitation_rate,
+                                float dy,
+                                float time_step_duration);
+
 } // namespace snow

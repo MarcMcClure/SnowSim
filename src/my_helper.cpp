@@ -2,6 +2,7 @@
 #include "my_helper.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -203,5 +204,73 @@ void print_field_subregion(const Field2D<float>& field,
         std::cout << '\n';
     }
     std::cout.flush();
+}
+
+Field1D<float> step_snow_source(const Field1D<float>& column_density,
+                                float settling_speed,
+                                float precipitation_rate,
+                                float dy,
+                                float time_step_duration)
+{
+    // Early-out when the input column is empty or the geometric/time scales are invalid.
+    if (column_density.nx == 0 || dy <= 0.0f || time_step_duration <= 0.0f)
+    {
+        return column_density;
+    }
+
+    Field1D<float> next_column(column_density.nx, 0.0f);
+
+    // Settling drives a constant downward velocity in this one-dimensional column.
+    const float vertical_velocity = -settling_speed;
+    if (vertical_velocity == 0.0f)
+    {
+        // Pure precipitation update with no vertical transport.
+        for (std::size_t j = 0; j < column_density.nx; ++j)
+        {
+            float density = column_density(j);
+            if (j + 1 == column_density.nx)
+            {
+                density += time_step_duration * precipitation_rate;
+            }
+            next_column(j) = std::max(density, 0.0f);
+        }
+        return next_column;
+    }
+
+    // lambda function that Match the face flux behaviour used in the CPU simulation 
+    // so the boundary source evolves in lock-step with interior cells.
+    const float flux_threshold = 1e-5f; // TODO: Share this threshold with other face_flux helpers in cpu_backend.cpp.
+    const auto face_flux = [&](std::size_t face_index) -> float
+    {
+        std::ptrdiff_t donor_index = (vertical_velocity > 0.0f)
+            ? static_cast<std::ptrdiff_t>(face_index) - 1
+            : static_cast<std::ptrdiff_t>(face_index);
+
+        if (donor_index < 0 ||static_cast<std::size_t>(donor_index) >= column_density.nx){
+            return 0.0f;
+        }
+
+        const float flux = vertical_velocity * column_density(static_cast<std::size_t>(donor_index));
+        return (std::fabs(flux) > flux_threshold) ? flux : 0.0f;
+    };
+
+    for (std::size_t j = 0; j < column_density.nx; ++j)
+    {
+        float density = column_density(j);
+
+        // Only the top cell receives direct precipitation.
+        if (j + 1 == column_density.nx)
+        {
+            density += time_step_duration * precipitation_rate;
+        }
+
+        const float flux_bottom = face_flux(j);
+        const float flux_top = face_flux(j + 1);
+
+        density += time_step_duration / dy * (flux_bottom - flux_top);
+        next_column(j) = std::max(density, 0.0f);
+    }
+
+    return next_column;
 }
 } // namespace snow

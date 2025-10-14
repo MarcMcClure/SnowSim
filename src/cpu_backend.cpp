@@ -85,19 +85,25 @@ namespace snow
 
                     float density = fields.snow_density(i, j);
 
+                    float top_sorce = 0;
+                    float right_sorce = 0;
+                    float left_sorce = 0;
                     if (i == 0 && fields.windborn_horizontal_source_left.in_bounds(j)) //if grid cell is in left most col add snow from wind outside of sim
                     {
-                        density += dt * fields.windborn_horizontal_source_left(j);
+                        if(fields.snow_transport_speed_x.idx(i,j) > 0) // if snow is advecting in from the left
+                            left_sorce =  fields.windborn_horizontal_source_left(j);
                     }
 
                     if (i == fields.snow_density.nx - 1 && fields.windborn_horizontal_source_right.in_bounds(j)) //if grid cell is in right most col add snow from wind outside of sim
                     {
-                        density += dt * fields.windborn_horizontal_source_right(j);
+                        if(fields.snow_transport_speed_x.idx(i+1,j) > 0) // if snow is advecting in from the right
+                            right_sorce = fields.windborn_horizontal_source_right(j);
                     }
 
                     if (j == fields.snow_density.ny - 1 && fields.precipitation_source.in_bounds(i)) //if grid cell is in top row add snow from percipitation
-                    {
-                        density += dt * fields.precipitation_source(i);
+                    {                        
+                        if(fields.snow_transport_speed_x.idx(i,j+1) > 0) // if snow is advecting down from above
+                            top_sorce = fields.precipitation_source(i);
                     }
 
                     //calculate snow flux on each side of the cell, velocity is positive when it is right or up
@@ -120,7 +126,7 @@ namespace snow
 
                     density += (dt / dx) * (flux_left - flux_right);
                     density += (dt / dy) * (flux_bottom - flux_top);
-                    // density += (dt / dy) * (flux_bottom - flux_top);
+                    density += dt * (left_sorce + right_sorce + top_sorce);
 
                     fields.next_snow_density(i, j) = std::max(density, 0.0f);
                 }

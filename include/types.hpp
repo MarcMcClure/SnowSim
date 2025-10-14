@@ -136,6 +136,8 @@ namespace snow
         }
     };
 
+    // TODO: Revisit decision to make sim 2d. unit withs might make conversions easier and logic more clear. 
+
     //wind speeds are shifted left and down respectivly such that the edges suroudning snow_density(x,y)
     //will be at wind_speed_x(x,y) [left],wind_speed_x(x+1,y) [right],wind_speed_y(x,y) [bottom], wind_speed_y(x,y+1) [top].
     //wind is positive when blowing to the right and up.
@@ -154,4 +156,3 @@ namespace snow
     };
 
 } // namespace snow
-
