@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
 #include <GLFW/glfw3.h>
-// TODO: something about these includes are screwed up
+// TODO: something about these includes is screwed up, it works but it could and perhaps should be changed
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
 
@@ -9,7 +9,7 @@ namespace snow {
 namespace viz {
 
 Camera::Camera()
-    : position_(0.0f, 0.0f, 20.0f),
+    : position_(0.0f, 0.0f, 120.0f),
       front_(0.0f, 0.0f, -1.0f),
       up_(0.0f, 1.0f, 0.0f),
       world_up_(0.0f, 1.0f, 0.0f),
@@ -60,6 +60,11 @@ glm::mat4 Camera::view_matrix() const
 glm::mat4 Camera::projection_matrix(float aspect) const
 {
     return glm::perspective(glm::radians(zoom_), aspect, 0.1f, 500.0f);
+    // float half_width = 80.0f;  // tune to fit your scene
+    // float half_height = half_width / aspect;
+    // return glm::ortho(-half_width, half_width,
+    //                   -half_height, half_height,
+    //                   0.1f, 500.0f);
 }
 
 glm::vec3 Camera::position() const

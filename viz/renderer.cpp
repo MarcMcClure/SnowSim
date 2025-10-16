@@ -55,11 +55,7 @@ namespace {
     constexpr float simWidthInModelSpace = 100.0f;
     constexpr GLuint kAirMaskTextureUnit = 0;
     // TODO: rename k-prefixed constants to snake_case for consistency.
-    // TODO: support rectangular visualization cells (distinct width/height).
-    constexpr float kArrowPlaneZ = 0.1f;           // arrows sit 0.1 units in front of the mask
-    constexpr float kArrowDensityMax = 2.0e-0f;    // density mapped to red
-    constexpr float kArrowReferenceWind = 60.0f;  // wind magnitude that yields half-cell arrow length
-    constexpr float kArrowMinLen = 0.1f;  // minimum arrow length as a percentage of the cell width
+    // TODO: support rectangular visualization cells (distinct width/height). changes are downstream of simWidthInModelSpace
 
     void frame_buffer_size_callback(GLFWwindow*, int width, int height)
     {
@@ -99,6 +95,7 @@ namespace {
     }
 }
 
+// TODO: move object initialize_arrow_resources and initialize_air_mask_resources from main into here
 bool initialize(std::int32_t width, std::int32_t height, const char* title)
 {
     if (g_window)  // if already intitilized return true.
@@ -182,7 +179,7 @@ bool initialize(std::int32_t width, std::int32_t height, const char* title)
  * @param cols Number of cells along the depth (Z) axis.
  * Must be called after the OpenGL context is ready and before the first render.
  */
-void initialize_air_mask_resources(std::size_t rows, std::size_t cols)
+void initialize_air_mask_resources(const Params& params)
 {
     if (!g_window)
     {
@@ -192,6 +189,12 @@ void initialize_air_mask_resources(std::size_t rows, std::size_t cols)
     if (g_air_mask_initialized)
     {
         return; // Already set up.
+    }
+
+    if (params.ny == 0 || params.nx == 0)
+    {
+        std::cerr << "[viz] Cannot initialize air-mask resources with zero-sized grid\n";
+        return;
     }
 
     if (!g_air_mask_shader.is_valid())
@@ -204,13 +207,13 @@ void initialize_air_mask_resources(std::size_t rows, std::size_t cols)
         }
     }
 
-    if (!g_air_mask_mesh.initialize(rows, cols, simWidthInModelSpace))
+    if (!g_air_mask_mesh.initialize(params.ny, params.nx, simWidthInModelSpace))
     {
         std::cerr << "[viz] Failed to initialize air-mask mesh\n";
         return;
     }
 
-    g_air_mask_texture_data.assign(rows * cols, 0); // Allocate staging buffer (one byte per cell).
+    g_air_mask_texture_data.assign(params.ny * params.nx, 0); // Allocate staging buffer (one byte per cell).
 
     g_air_mask_shader.bind();
     g_air_mask_shader.set_uniform("uMaskTexture", static_cast<int>(kAirMaskTextureUnit)); // sampler2D ? texture unit mapping.
@@ -222,7 +225,7 @@ void initialize_air_mask_resources(std::size_t rows, std::size_t cols)
     g_air_mask_initialized = true;
 }
 
-void initialize_arrow_resources(std::size_t rows, std::size_t cols)
+void initialize_arrow_resources(const Params& params)
 {
     if (!g_window)
     {
@@ -231,6 +234,12 @@ void initialize_arrow_resources(std::size_t rows, std::size_t cols)
 
     if (g_arrow_initialized)
     {
+        return;
+    }
+
+    if (params.ny == 0 || params.nx == 0)
+    {
+        std::cerr << "[viz] Cannot initialize arrow resources with zero-sized grid\n";
         return;
     }
 
@@ -244,23 +253,23 @@ void initialize_arrow_resources(std::size_t rows, std::size_t cols)
         }
     }
 
-    if (!g_arrow_layer.initialize(rows, cols))
+    if (!g_arrow_layer.initialize(params.ny, params.nx))
     {
         std::cerr << "[viz] Failed to initialize arrow layer\n";
         return;
     }
 
-    const float cell_size = simWidthInModelSpace / static_cast<float>(cols);
+    const float cell_size = simWidthInModelSpace / static_cast<float>(params.nx);
     const float half_width = simWidthInModelSpace * 0.5f;
-    const float total_height = cell_size * static_cast<float>(rows);
+    const float total_height = cell_size * static_cast<float>(params.ny);
     const float half_height = total_height * 0.5f;
     g_arrow_layer.set_grid_metrics(cell_size, half_height, half_width);
 
-    g_arrow_instances.assign(rows * cols, {});
+    g_arrow_instances.assign(params.ny * params.nx, {});
 
     g_arrow_shader.bind();
-    g_arrow_shader.set_uniform("uPlaneZ", kArrowPlaneZ);
-    g_arrow_shader.set_uniform("uDensityMax", kArrowDensityMax);
+    g_arrow_shader.set_uniform("uPlaneZ", params.arrow_plane_z);
+    g_arrow_shader.set_uniform("uDensityMax", params.arrow_density_max);
     g_arrow_shader.set_uniform("uArrowHalfWidth", cell_size * 0.5f);
     glUseProgram(0);
 
@@ -417,8 +426,6 @@ void render_air_mask(const Params& params, const Field2D<std::uint8_t>& air_mask
 
 void render_arrows(const Params& params, const Fields& fields)
 {
-    (void)params; // currently unused; retained for symmetry
-
     if (!g_arrow_initialized)
     {
         return;
@@ -440,7 +447,7 @@ void render_arrows(const Params& params, const Fields& fields)
     const float half_width = g_arrow_layer.half_width();
     const float half_height = g_arrow_layer.half_height();
 
-    const float inv_reference_wind = cell_size / kArrowReferenceWind; // magnitude -> length factor
+    const float inv_reference_wind = cell_size / params.arrow_reference_wind; // magnitude -> length factor
 
     std::size_t instance_index = 0;
     for (std::size_t j = 0; j < rows; ++j)
@@ -501,7 +508,7 @@ void render_arrows(const Params& params, const Fields& fields)
             }
             else
             {
-                const float minimum_arrow_length = cell_size * kArrowMinLen; // enforce a visible baseline arrow length.
+                const float minimum_arrow_length = cell_size * params.arrow_min_length; // enforce a visible baseline arrow length.
                 if (length < minimum_arrow_length)
                 {
                     length = minimum_arrow_length;
@@ -518,8 +525,8 @@ void render_arrows(const Params& params, const Fields& fields)
     g_arrow_layer.update_instances(g_arrow_instances);
 
     g_arrow_shader.bind();
-    g_arrow_shader.set_uniform("uPlaneZ", kArrowPlaneZ);
-    g_arrow_shader.set_uniform("uDensityMax", kArrowDensityMax);
+    g_arrow_shader.set_uniform("uPlaneZ", params.arrow_plane_z);
+    g_arrow_shader.set_uniform("uDensityMax", params.arrow_density_max);
     g_arrow_shader.set_uniform("uArrowHalfWidth", cell_size * 0.5f);
     g_arrow_shader.set_uniform("uView", view_matrix());
     g_arrow_shader.set_uniform("uProjection", projection_matrix());

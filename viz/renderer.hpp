@@ -20,8 +20,8 @@ void begin_frame();
 void render_frame(const snow::Params& params, const snow::Fields& fields);
 void end_frame();
 
-void initialize_air_mask_resources(std::size_t rows, std::size_t cols);
-void initialize_arrow_resources(std::size_t rows, std::size_t cols);
+void initialize_air_mask_resources(const snow::Params& params);
+void initialize_arrow_resources(const snow::Params& params);
 
 void render_air_mask(const snow::Params& params, const snow::Field2D<std::uint8_t>& air_mask);
 void render_arrows(const snow::Params& params, const snow::Fields& fields);

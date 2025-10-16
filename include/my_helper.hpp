@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
 
 #include "types.hpp"
 
@@ -24,5 +25,14 @@ Field1D<float> step_snow_source(const Field1D<float>& column_density,
                                 float precipitation_rate,
                                 float dy,
                                 float time_step_duration);
+
+// Loads simulation parameters and fields from a JSON configuration file.
+bool load_simulation_config(const std::string& config_path,
+                            Params& params_out,
+                            Fields& fields_out);
+
+// Writes the provided params/fields to resources/configs/example1.json for quick inspection.
+void dump_simulation_state_to_example_json(const Params& params,
+                                           const Fields& fields);
 
 } // namespace snow

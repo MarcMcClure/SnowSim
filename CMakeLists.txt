@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.18)
 
 project(SnowSim VERSION 0.1.0 LANGUAGES C CXX)
 
+# toggles to swap between CPU/GPU backend and to turn on/off build tests
 option(ENABLE_CUDA "Enable CUDA backend" OFF)
+option(SNOWSIM_ENABLE_TESTS "Build SnowSim unit tests" ON)
 
 if(ENABLE_CUDA)
   enable_language(CUDA)
@@ -79,3 +81,25 @@ add_custom_command(TARGET snow_sim_app POST_BUILD
           $<TARGET_FILE_DIR:snow_sim_app>/resources)
 
 set_property(TARGET snow_sim_app PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# test config enable tests with SNOWSIM_ENABLE_TESTS
+if(SNOWSIM_ENABLE_TESTS)
+  enable_testing()
+
+  add_executable(snow_sim_unit_tests
+    tests/unit/test_tests.cpp
+    tests/unit/catch_amalgamated.cpp
+  )
+
+  target_include_directories(snow_sim_unit_tests PRIVATE
+    include
+    tests/unit
+    tests/integration
+    ${CMAKE_SOURCE_DIR}/external/include
+  )
+
+  target_link_libraries(snow_sim_unit_tests PRIVATE snow_sim)
+  target_compile_features(snow_sim_unit_tests PRIVATE cxx_std_17)
+
+  add_test(NAME SnowSimUnitTests COMMAND snow_sim_unit_tests)
+endif()

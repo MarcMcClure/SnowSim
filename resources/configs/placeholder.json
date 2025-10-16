@@ -1,0 +1,106 @@
+{
+    "params":  {
+                   "wind_speed":  null,
+                   "settling_speed":  null,
+                   "precipitation_rate":  null,
+                   "ground_height":  null,
+                   "settaled_snow_density":  null,
+                   "Lx":  null,
+                   "Ly":  null,
+                   "dx":  null,
+                   "dy":  null,
+                   "nx":  null,
+                   "ny":  null,
+                   "total_sim_time":  null,
+                   "time_step_duration":  null,
+                   "total_time_steps":  null,
+                   "steps_per_frame":  null,
+                   "light_direction":  [
+                                           null,
+                                           null,
+                                           null
+                                       ],
+                   "light_color":  [
+                                       null,
+                                       null,
+                                       null
+                                   ],
+                   "object_color":  [
+                                        null,
+                                        null,
+                                        null
+                                    ],
+                   "arrow_plane_z":  null,
+                   "arrow_density_max":  null,
+                   "arrow_reference_wind":  null,
+                   "arrow_min_length":  null,
+                   "viz_on":  null
+               },
+    "fields":  {
+                   "air_mask":  {
+                                    "nx":  null,
+                                    "ny":  null,
+                                    "data":  [
+
+                                             ]
+                                },
+                   "snow_density":  {
+                                        "nx":  null,
+                                        "ny":  null,
+                                        "data":  [
+
+                                                 ]
+                                    },
+                   "next_snow_density":  {
+                                             "nx":  null,
+                                             "ny":  null,
+                                             "data":  [
+
+                                                      ]
+                                         },
+                   "snow_transport_speed_x":  {
+                                                  "nx":  null,
+                                                  "ny":  null,
+                                                  "data":  [
+
+                                                           ]
+                                              },
+                   "snow_transport_speed_y":  {
+                                                  "nx":  null,
+                                                  "ny":  null,
+                                                  "data":  [
+
+                                                           ]
+                                              },
+                   "snow_accumulation_mass":  {
+                                                  "nx":  null,
+                                                  "data":  [
+
+                                                           ]
+                                              },
+                   "snow_accumulation_density":  {
+                                                     "nx":  null,
+                                                     "data":  [
+
+                                                              ]
+                                                 },
+                   "precipitation_source":  {
+                                                "nx":  null,
+                                                "data":  [
+
+                                                         ]
+                                            },
+                   "windborn_horizontal_source_left":  {
+                                                           "nx":  null,
+                                                           "data":  [
+
+                                                                    ]
+                                                       },
+                   "windborn_horizontal_source_right":  {
+                                                            "nx":  null,
+                                                            "data":  [
+
+                                                                     ]
+                                                        }
+               }
+}

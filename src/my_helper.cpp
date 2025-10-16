@@ -3,11 +3,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <utility>
 
+#include "json.hpp"
 #include "types.hpp"
 
 namespace snow{
@@ -272,5 +274,271 @@ Field1D<float> step_snow_source(const Field1D<float>& column_density,
     }
 
     return next_column;
+}
+
+bool load_simulation_config(const std::string& config_path,
+                            Params& params_out,
+                            Fields& fields_out)
+{
+    // Attempt to open the requested configuration file; fail fast if the path is invalid.
+    std::ifstream config_stream(config_path);
+    if (!config_stream)
+    {
+        return false;
+    }
+
+    nlohmann::json root;
+    try
+    {
+        config_stream >> root;
+    }
+    catch (const nlohmann::json::parse_error&)
+    {
+        return false;
+    }
+
+    if (!root.contains("params") || !root["params"].is_object())
+    {
+        return false;
+    }
+
+    const auto& params_node = root["params"];
+    try
+    {
+        // Populate every numeric member of Params directly from the JSON object.
+        params_out.wind_speed = params_node["wind_speed"].get<float>();
+        params_out.settling_speed = params_node["settling_speed"].get<float>();
+        params_out.precipitation_rate = params_node["precipitation_rate"].get<float>();
+        params_out.ground_height = params_node["ground_height"].get<float>();
+        params_out.settaled_snow_density = params_node["settaled_snow_density"].get<float>();
+        params_out.Lx = params_node["Lx"].get<float>();
+        params_out.Ly = params_node["Ly"].get<float>();
+        params_out.dx = params_node["dx"].get<float>();
+        params_out.dy = params_node["dy"].get<float>();
+        params_out.total_sim_time = params_node["total_sim_time"].get<float>();
+        params_out.time_step_duration = params_node["time_step_duration"].get<float>();
+        params_out.steps_per_frame = params_node["steps_per_frame"].get<int>();
+
+        const auto light_direction_array = params_node["light_direction"];
+        params_out.light_direction = glm::vec3(light_direction_array[0].get<float>(),
+                                               light_direction_array[1].get<float>(),
+                                               light_direction_array[2].get<float>());
+
+        const auto light_color_array = params_node["light_color"];
+        params_out.light_color = glm::vec3(light_color_array[0].get<float>(),
+                                           light_color_array[1].get<float>(),
+                                           light_color_array[2].get<float>());
+
+        const auto object_color_array = params_node["object_color"];
+        params_out.object_color = glm::vec3(object_color_array[0].get<float>(),
+                                            object_color_array[1].get<float>(),
+                                            object_color_array[2].get<float>());
+        params_out.arrow_plane_z = params_node["arrow_plane_z"].get<float>();
+        params_out.arrow_density_max = params_node["arrow_density_max"].get<float>();
+        params_out.arrow_reference_wind = params_node["arrow_reference_wind"].get<float>();
+        params_out.arrow_min_length = params_node["arrow_min_length"].get<float>();
+        params_out.viz_on = params_node["viz_on"].get<bool>();
+
+        params_out.nx = static_cast<std::size_t>(std::lround(params_out.Lx / params_out.dx));
+        params_out.ny = static_cast<std::size_t>(std::lround(params_out.Ly / params_out.dy));
+
+        params_out.total_time_steps = static_cast<int>(std::lround(params_out.total_sim_time / params_out.time_step_duration));
+    }
+    catch (const nlohmann::json::type_error&)
+    {
+        return false;
+    }
+
+    if (!root.contains("fields") || !root["fields"].is_object())
+    {
+        return false;
+    }
+
+    const auto& fields_node = root["fields"];
+
+    // Helper to populate 2D float fields (snow densities, velocity grids, etc.).
+    auto load_field2d = [](const nlohmann::json& node, Field2D<float>& field) -> bool
+    {
+        try
+        {
+            const std::size_t nx = node["nx"].get<std::size_t>();
+            const std::size_t ny = node["ny"].get<std::size_t>();
+            const auto& data = node["data"];
+            if (!data.is_array() || data.size() != nx * ny)
+            {
+                return false;
+            }
+
+            field.resize(nx, ny, 0.0f);
+            for (std::size_t idx = 0; idx < data.size(); ++idx)
+            {
+                field.data[idx] = data[idx].get<float>();
+            }
+        }
+        catch (const nlohmann::json::type_error&)
+        {
+            return false;
+        }
+        return true;
+    };
+
+    // Helper to populate the uint8_t 2D air-mask.
+    auto load_field2d_u8 = [](const nlohmann::json& node, Field2D<std::uint8_t>& field) -> bool
+    {
+        try
+        {
+            const std::size_t nx = node["nx"].get<std::size_t>();
+            const std::size_t ny = node["ny"].get<std::size_t>();
+            const auto& data = node["data"];
+            if (!data.is_array() || data.size() != nx * ny)
+            {
+                return false;
+            }
+
+            field.resize(nx, ny, static_cast<std::uint8_t>(0));
+            for (std::size_t idx = 0; idx < data.size(); ++idx)
+            {
+                field.data[idx] = data[idx].get<std::uint8_t>();
+            }
+        }
+        catch (const nlohmann::json::type_error&)
+        {
+            return false;
+        }
+        return true;
+    };
+
+    // Helper to populate 1D float fields (boundary sources, accumulation arrays, etc.).
+    auto load_field1d = [](const nlohmann::json& node, Field1D<float>& field) -> bool
+    {
+        try
+        {
+            const std::size_t nx = node["nx"].get<std::size_t>();
+            const auto& data = node["data"];
+            if (!data.is_array() || data.size() != nx)
+            {
+                return false;
+            }
+
+            field.resize(nx, 0.0f);
+            for (std::size_t idx = 0; idx < data.size(); ++idx)
+            {
+                field.data[idx] = data[idx].get<float>();
+            }
+        }
+        catch (const nlohmann::json::type_error&)
+        {
+            return false;
+        }
+        return true;
+    };
+
+    // if (!load_field2d_u8(fields_node["air_mask"], fields_out.air_mask)) return false;
+    // if (!load_field2d(fields_node["snow_density"], fields_out.snow_density)) return false;
+    // if (!load_field2d(fields_node["next_snow_density"], fields_out.next_snow_density)) return false;
+    // if (!load_field2d(fields_node["snow_transport_speed_x"], fields_out.snow_transport_speed_x)) return false;
+    // if (!load_field2d(fields_node["snow_transport_speed_y"], fields_out.snow_transport_speed_y)) return false;
+    // if (!load_field1d(fields_node["snow_accumulation_mass"], fields_out.snow_accumulation_mass)) return false;
+    // if (!load_field1d(fields_node["snow_accumulation_density"], fields_out.snow_accumulation_density)) return false;
+    // if (!load_field1d(fields_node["precipitation_source"], fields_out.precipitation_source)) return false;
+    // if (!load_field1d(fields_node["windborn_horizontal_source_left"], fields_out.windborn_horizontal_source_left)) return false;
+    // if (!load_field1d(fields_node["windborn_horizontal_source_right"], fields_out.windborn_horizontal_source_right)) return false;
+
+    fields_out.air_mask = air_mask_flat(params_out, 25.0f);
+    fields_out.snow_density = Field2D<float>(params_out.nx, params_out.ny);
+    fields_out.next_snow_density = Field2D<float>(params_out.nx, params_out.ny);
+    fields_out.snow_transport_speed_x = Field2D<float>(params_out.nx + 1, params_out.ny, params_out.wind_speed);
+    fields_out.snow_transport_speed_y = Field2D<float>(params_out.nx, params_out.ny + 1, -params_out.settling_speed);
+    fields_out.precipitation_source = Field1D<float>(params_out.nx, params_out.precipitation_rate);
+    fields_out.windborn_horizontal_source_left = Field1D<float>(params_out.ny, 0.0f);
+    fields_out.windborn_horizontal_source_right = Field1D<float>(params_out.ny, 0.0f);
+    fields_out.snow_accumulation_mass = Field1D<float>(params_out.nx);
+    fields_out.snow_accumulation_density = Field1D<float>(params_out.nx,params_out.settaled_snow_density);
+
+    return true;
+}
+
+void dump_simulation_state_to_example_json(const Params& params,
+                                           const Fields& fields)
+{
+    nlohmann::json root;
+
+    nlohmann::json params_node;
+    params_node["wind_speed"] = params.wind_speed;
+    params_node["settling_speed"] = params.settling_speed;
+    params_node["precipitation_rate"] = params.precipitation_rate;
+    params_node["ground_height"] = params.ground_height;
+    params_node["settaled_snow_density"] = params.settaled_snow_density;
+    params_node["Lx"] = params.Lx;
+    params_node["Ly"] = params.Ly;
+    params_node["dx"] = params.dx;
+    params_node["dy"] = params.dy;
+    params_node["nx"] = params.nx;
+    params_node["ny"] = params.ny;
+    params_node["total_sim_time"] = params.total_sim_time;
+    params_node["time_step_duration"] = params.time_step_duration;
+    params_node["total_time_steps"] = params.total_time_steps;
+    params_node["steps_per_frame"] = params.steps_per_frame;
+    params_node["light_direction"] = nlohmann::json::array({ params.light_direction.x,
+                                                             params.light_direction.y,
+                                                             params.light_direction.z });
+    params_node["light_color"] = nlohmann::json::array({ params.light_color.x,
+                                                         params.light_color.y,
+                                                         params.light_color.z });
+    params_node["object_color"] = nlohmann::json::array({ params.object_color.x,
+                                                          params.object_color.y,
+                                                          params.object_color.z });
+    root["params"] = params_node;
+
+    nlohmann::json fields_node;
+    fields_node["air_mask"] = {
+        { "nx", fields.air_mask.nx },
+        { "ny", fields.air_mask.ny },
+        { "data", fields.air_mask.data }
+    };
+    fields_node["snow_density"] = {
+        { "nx", fields.snow_density.nx },
+        { "ny", fields.snow_density.ny },
+        { "data", fields.snow_density.data }
+    };
+    fields_node["next_snow_density"] = {
+        { "nx", fields.next_snow_density.nx },
+        { "ny", fields.next_snow_density.ny },
+        { "data", fields.next_snow_density.data }
+    };
+    fields_node["snow_transport_speed_x"] = {
+        { "nx", fields.snow_transport_speed_x.nx },
+        { "ny", fields.snow_transport_speed_x.ny },
+        { "data", fields.snow_transport_speed_x.data }
+    };
+    fields_node["snow_transport_speed_y"] = {
+        { "nx", fields.snow_transport_speed_y.nx },
+        { "ny", fields.snow_transport_speed_y.ny },
+        { "data", fields.snow_transport_speed_y.data }
+    };
+    fields_node["snow_accumulation_mass"] = {
+        { "nx", fields.snow_accumulation_mass.nx },
+        { "data", fields.snow_accumulation_mass.data }
+    };
+    fields_node["snow_accumulation_density"] = {
+        { "nx", fields.snow_accumulation_density.nx },
+        { "data", fields.snow_accumulation_density.data }
+    };
+    fields_node["precipitation_source"] = {
+        { "nx", fields.precipitation_source.nx },
+        { "data", fields.precipitation_source.data }
+    };
+    fields_node["windborn_horizontal_source_left"] = {
+        { "nx", fields.windborn_horizontal_source_left.nx },
+        { "data", fields.windborn_horizontal_source_left.data }
+    };
+    fields_node["windborn_horizontal_source_right"] = {
+        { "nx", fields.windborn_horizontal_source_right.nx },
+        { "data", fields.windborn_horizontal_source_right.data }
+    };
+    root["fields"] = fields_node;
+
+    std::ofstream output_stream("resources/configs/example1.json");
+    output_stream << root.dump(2);
 }
 } // namespace snow

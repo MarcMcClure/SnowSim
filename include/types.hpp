@@ -32,9 +32,18 @@ namespace snow
 
         int steps_per_frame;
 
+        // turn viz on or off
+        bool viz_on;
+        
+        // TODO: remove object_color (and the related cube wiring) once visualization is stable.
         glm::vec3 light_direction; // world-space direction toward the light
         glm::vec3 light_color;     // RGB intensity for the directional light
         glm::vec3 object_color;    // base color applied to rendered geometry
+        
+        float arrow_plane_z;       // z-offset for arrow layer placement in viz
+        float arrow_density_max;   // density mapped to maximum arrow color in viz
+        float arrow_reference_wind; // wind speed that yields half-cell arrow length in viz
+        float arrow_min_length;    // minimum arrow length as percentage of cell width in viz
     };
 
     template <typename T>

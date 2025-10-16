@@ -28,6 +28,16 @@ From the build directory (Visual Studio generators place binaries under configur
 ./build/Debug/snow_sim_app.exe
 ```
 
+## Testing
+
+Unit tests are built with Catch2’s amalgamated release (vendored in `tests/unit/`). By default they are included when configuring the project; to override this, toggle the `SNOWSIM_ENABLE_TESTS` option:
+
+```
+cmake -S . -B build -DSNOWSIM_ENABLE_TESTS=ON
+cmake --build build --config Debug --target snow_sim_unit_tests
+ctest --build-config Debug
+```
+
 ## Code Layout
 
 - `include/`: public headers (`types.hpp`, `simulation.hpp`, backends)
@@ -53,7 +63,7 @@ With those assets in place, the default build commands above produce a windowed 
 - Params fields use consistent names and units: `time_step_duration` (seconds), `total_time_steps` is an integer.
 - Grid sizes (`nx`, `ny`) are `size_t` to match container sizes.
 - The app rounds step count and grid resolution using `std::lround` for predictable discretization.
-
-
+- JSON parsing uses the single-header release of [nlohmann/json](https://github.com/nlohmann/json/blob/develop/single_include/nlohmann/json.hpp); the header is vendored under `include/json.hpp`.
+- Unit tests use the Catch2 amalgamated build (`tests/unit/catch_amalgamated.hpp/.cpp` vendored from [Catch2](https://github.com/catchorg/Catch2/tree/devel/extras)).
 
 
