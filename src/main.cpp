@@ -105,6 +105,7 @@ int main(int argc, char* argv[])
 
         sim.step(fields, params);
 
+        // TODO: revisit boundary source update once dynamic weather arrives—clamp CFL instead of early-return. Requires implementation of snow boundry sorce object first.
         // incrementing/ramping left boundry sorce
         left_boundary_column_next = step_snow_source(left_boundary_column_prev,
                                                      params.settling_speed,

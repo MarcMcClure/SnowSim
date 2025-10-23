@@ -208,15 +208,43 @@ void print_field_subregion(const Field2D<float>& field,
     std::cout.flush();
 }
 
+
+// TODO: consider refactoring boundary snow source logic into a SnowSourceBoundary class so validation happens once.
 Field1D<float> step_snow_source(const Field1D<float>& column_density,
                                 float settling_speed,
                                 float precipitation_rate,
                                 float dy,
-                                float time_step_duration)
+                                float dt)
 {
-    // Early-out when the input column is empty or the geometric/time scales are invalid.
-    if (column_density.nx == 0 || dy <= 0.0f || time_step_duration <= 0.0f)
+    // DEBUG: step_snow_source called with non-positive dy, colum geomitry, non-positive time_step_duration, or the CLF fails.
+    if (column_density.nx == 0)
     {
+        std::cerr << "Warning: step_snow_source received cell number/column_density.nx == 0\n";
+        return column_density;
+    }
+
+    if (dy <= 0.0f)
+    {
+        std::cerr << "Warning: step_snow_source received non-positive cell height/dy (" << dy << ")\n";
+        return column_density;
+    }
+
+    if (dt <= 0.0f)
+    {
+        std::cerr << "Warning: step_snow_source received non-positive time_step_duration (" << dt << ")\n";
+        return column_density;
+    }
+
+    if (precipitation_rate < 0.0f)
+    {
+        std::cerr << "Warning: step_snow_source received non-positive precipitation_rate (" << precipitation_rate << ")\n";
+        return column_density;
+    }
+
+    // CFL check
+    const float clf_snow_sorce = std::fabs(settling_speed) * dt / dy;
+    if (clf_snow_sorce > 1){
+        std::cerr << "Warning: CFL condition exceeded (CFL_snow_source=" << clf_snow_sorce << "\n";
         return column_density;
     }
 
@@ -232,7 +260,7 @@ Field1D<float> step_snow_source(const Field1D<float>& column_density,
             float density = column_density(j);
             if (j + 1 == column_density.nx)
             {
-                density += time_step_duration * precipitation_rate;
+                density += dt * precipitation_rate;
             }
             next_column(j) = std::max(density, 0.0f);
         }
@@ -261,15 +289,15 @@ Field1D<float> step_snow_source(const Field1D<float>& column_density,
         float density = column_density(j);
 
         // Only the top cell receives direct precipitation.
-        if (j + 1 == column_density.nx)
+        if (j + 1 == column_density.nx && precipitation_rate > 0.0f )
         {
-            density += time_step_duration * precipitation_rate;
+            density += dt * precipitation_rate;
         }
 
         const float flux_bottom = face_flux(j);
         const float flux_top = face_flux(j + 1);
 
-        density += time_step_duration / dy * (flux_bottom - flux_top);
+        density += dt / dy * (flux_bottom - flux_top);
         next_column(j) = std::max(density, 0.0f);
     }
 
@@ -444,7 +472,7 @@ bool load_simulation_config(const std::string& config_path,
     // if (!load_field1d(fields_node["windborn_horizontal_source_left"], fields_out.windborn_horizontal_source_left)) return false;
     // if (!load_field1d(fields_node["windborn_horizontal_source_right"], fields_out.windborn_horizontal_source_right)) return false;
 
-    fields_out.air_mask = air_mask_flat(params_out, 25.0f);
+    fields_out.air_mask = air_mask_flat(params_out, params_out.ground_height);
     fields_out.snow_density = Field2D<float>(params_out.nx, params_out.ny);
     fields_out.next_snow_density = Field2D<float>(params_out.nx, params_out.ny);
     fields_out.snow_transport_speed_x = Field2D<float>(params_out.nx + 1, params_out.ny, params_out.wind_speed);

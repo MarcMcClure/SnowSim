@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <initializer_list>
 #include <glm/glm/glm.hpp>
 
 namespace snow
@@ -59,6 +60,18 @@ namespace snow
         Field1D(std::size_t nx_, const T& uniform_field_value = T{}) :
             nx(nx_),
             data(nx_, uniform_field_value)
+        {}
+
+        // construct Field1D from an existing vector of values.
+        Field1D(std::vector<T> values) :
+            nx(values.size()),
+            data(std::move(values))
+        {}
+
+        // construct Field1D from a brace-enclosed list of values.
+        Field1D(std::initializer_list<T> values) :
+            nx(values.size()),
+            data(values)
         {}
 
         // Element access (mutable)

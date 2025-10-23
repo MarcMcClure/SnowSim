@@ -12,6 +12,7 @@ endif()
 
 add_library(snow_sim STATIC
   src/cpu_backend.cpp
+  src/my_helper.cpp
 )
 
 target_include_directories(snow_sim PUBLIC
@@ -88,6 +89,9 @@ if(SNOWSIM_ENABLE_TESTS)
 
   add_executable(snow_sim_unit_tests
     tests/unit/test_tests.cpp
+    tests/unit/cpu_backend_tests.cpp
+    tests/unit/snow_source_tests.cpp
+    tests/unit/config_loader_tests.cpp
     tests/unit/catch_amalgamated.cpp
   )
 
