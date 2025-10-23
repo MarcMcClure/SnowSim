@@ -1,10 +1,14 @@
+#include <string>
+
 #include "catch_amalgamated.hpp"
 #include "my_helper.hpp"
 #include "support/my_catch_warning.hpp"
 
 using snow::Field1D;
+using test_support::capture_stderr;
 
 //tests step_snow_source in my_helper.json
+// TODO: make error checking assertions prittier, take out the nextr anew lines.
 
 namespace {
     const Field1D<float> column_density(5, 10.0f);
@@ -21,28 +25,27 @@ TEST_CASE("step_snow_source baseline evolution", "[snow_source][unit]")
                                                               precipitation_rate,
                                                               dy,
                                                               dt);
-    const Field1D<float> expected({10.0f,10.0f,10.0f,10.0f,9.96f});
+    const Field1D<float> expected_column_density({10.0f,10.0f,10.0f,10.0f,9.96f});
     REQUIRE(next_column_density.nx == column_density.nx );
-    REQUIRE_THAT(next_column_density.data, Catch::Matchers::Approx(expected.data).margin(1e-5f));
+    REQUIRE_THAT(next_column_density.data, Catch::Matchers::Approx(expected_column_density.data).margin(1e-5f));
 }
 
 TEST_CASE("step_snow_source column size zero", "[snow_source][unit][warning]")
 {
-    // DEBUG: this test intentionally fails for the purposes of debuging my_catch_warning.hpp
-    // REQUIRE_WARNING("Warning: step_snow_source received cell number/column_density.nx = 0");
-    REQUIRE_WARNING("Warning: step_snow_source received cell number/column_density.nx == 0");
+    const Field1D<float> column_density_zero(0, 10.0f);
 
-    const Field1D<float> column_density(0, 10.0f);
-    const Field1D<float> next_column_density = snow::step_snow_source(column_density,
-                                                              settling_speed,
-                                                              precipitation_rate,
-                                                              dy,
-                                                              dt);
+    Field1D<float> next_column_density;
+    const std::string warning = capture_stderr([&] {
+        next_column_density = snow::step_snow_source(column_density_zero,
+                                                     settling_speed,
+                                                     precipitation_rate,
+                                                     dy,
+                                                     dt);
+    });
 
-    REQUIRE(true);
-    REQUIRE(next_column_density.nx == column_density.nx );
-    REQUIRE(next_column_density.data == column_density.data);
-    // The listener performs the exact stderr match after the test body finishes.
+    REQUIRE(warning == "Warning: step_snow_source received cell number/column_density.nx == 1\n");
+    REQUIRE(next_column_density.nx == column_density_zero.nx);
+    REQUIRE(next_column_density.data == column_density_zero.data);
 }
 
 /**
