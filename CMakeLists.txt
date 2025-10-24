@@ -101,6 +101,8 @@ if(SNOWSIM_ENABLE_TESTS)
     tests/integration
     ${CMAKE_SOURCE_DIR}/external/include
   )
+  target_compile_definitions(snow_sim_unit_tests PRIVATE
+    SNOW_SOURCE_SCENARIO_FILE_PATH="${CMAKE_SOURCE_DIR}/tests/unit/snow_source_scenarios.json")
 
   target_link_libraries(snow_sim_unit_tests PRIVATE snow_sim)
   target_compile_features(snow_sim_unit_tests PRIVATE cxx_std_17)

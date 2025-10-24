@@ -1,0 +1,148 @@
+{
+  "scenarios": [
+    {
+      "name": "baseline evolution",
+      "tags": ["snow_source", "unit", "baseline"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 9.96],
+      "expected_warning": ""
+    },
+    {
+      "name": "zero length column produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified column density"],
+      "inputs": {
+        "column_density": [],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [],
+      "expected_warning": "Warning: step_snow_source received cell number/column_density.nx == 0\n"
+    },
+    {
+      "name": "negative dy produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified dy"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": -1.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: step_snow_source received non-positive cell height/dy (-1)\n"
+    },
+    {
+      "name": "zero dy produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified dy"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 0.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: step_snow_source received non-positive cell height/dy (0)\n"
+    },
+    {
+      "name": "negative dt produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified dt"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": -1.0
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: step_snow_source received non-positive time_step_duration (-1)\n"
+    },
+    {
+      "name": "zero dt produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified dt"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.0
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: step_snow_source received non-positive time_step_duration (0)\n"
+    },
+    {
+      "name": "negative precipitation rate produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified precipitation rate"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": -1.0,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: step_snow_source received non-positive precipitation_rate (-1)\n"
+    },
+    {
+      "name": "small positive dy breaks CFL and produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified dy"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 0.0001,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=500\n"
+    },
+    {
+      "name": "large positive dt breaks CFL and produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified dt"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 99999.0
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=4999.95\n"
+    },
+    {
+      "name": "large positive settling speed breaks CFL and produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 99999.0,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=999.99\n"
+    },
+    {
+      "name": "large negative settling speed breaks CFL and produces warning",
+      "tags": ["snow_source", "unit", "warning", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": -99999.0,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=999.99\n"
+    }
+  ]
+}
+
