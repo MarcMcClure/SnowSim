@@ -13,6 +13,7 @@
       "expected_column_density": [10.0, 10.0, 10.0, 10.0, 9.96],
       "expected_warning": ""
     },
+
     {
       "name": "zero length column produces warning",
       "tags": ["snow_source", "unit", "warning", "modified column density"],
@@ -91,6 +92,7 @@
       "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
       "expected_warning": "Warning: step_snow_source received non-positive precipitation_rate (-1)\n"
     },
+
     {
       "name": "small positive dy breaks CFL and produces warning",
       "tags": ["snow_source", "unit", "warning", "modified dy"],
@@ -102,7 +104,7 @@
         "dt": 0.1
       },
       "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
-      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=500\n"
+      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=500)\n"
     },
     {
       "name": "large positive dt breaks CFL and produces warning",
@@ -115,7 +117,7 @@
         "dt": 99999.0
       },
       "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
-      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=4999.95\n"
+      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=4999.95)\n"
     },
     {
       "name": "large positive settling speed breaks CFL and produces warning",
@@ -128,7 +130,7 @@
         "dt": 0.1
       },
       "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
-      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=999.99\n"
+      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=999.99)\n"
     },
     {
       "name": "large negative settling speed breaks CFL and produces warning",
@@ -141,8 +143,283 @@
         "dt": 0.1
       },
       "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
-      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=999.99\n"
+      "expected_warning": "Warning: CFL condition exceeded (CFL_snow_source=999.99)\n"
+    },
+
+    {
+      "name": "small positive dt",
+      "tags": ["snow_source", "unit", "modified dt"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.00001
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+      "expected_warning": ""
+    },
+    {
+      "name": "small positive dy and dt",
+      "tags": ["snow_source", "unit", "modified dy", "modified dt"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 0.0001,
+        "dt": 0.00001
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 9.5],
+      "expected_warning": ""
+    },
+    {
+      "name": "small positive settling speed",
+      "tags": ["snow_source", "unit", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.00001,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.01],
+      "expected_warning": ""
+    },
+    {
+      "name": "small positive dy and settling speed",
+      "tags": ["snow_source", "unit", "modified dy", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.00001,
+        "precipitation_rate": 0.1,
+        "dy": 0.0001,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 9.91],
+      "expected_warning": ""
+    },
+    {
+      "name": "small negative settling speed",
+      "tags": ["snow_source", "unit", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": -0.00001,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.01],
+      "expected_warning": ""
+    },
+    {
+      "name": "small positive dy and small negative settling speed",
+      "tags": ["snow_source", "unit", "modified dy", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": -0.00001,
+        "precipitation_rate": 0.1,
+        "dy": 0.0001,
+        "dt": 0.1
+      },
+      "expected_column_density": [9.9, 10.0, 10.0, 10.0, 10.01],
+      "expected_warning": ""
+    },
+    {
+      "name": "large positive dy",
+      "tags": ["snow_source", "unit", "modified dy"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 99999.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.01],
+      "expected_warning": ""
+    },
+    {
+      "name": "large positive dy and dt",
+      "tags": ["snow_source", "unit", "modified dy", "modified dt"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 99999.0,
+        "dt": 9999.0
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 1009.4],
+      "expected_warning": ""
+    },
+    {
+      "name": "large positive dy and settling speed",
+      "tags": ["snow_source", "unit", "modified dy", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 9999.0,
+        "precipitation_rate": 0.1,
+        "dy": 99999.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 9.91],
+      "expected_warning": ""
+    },
+    {
+      "name": "large positive dy and large negative settling speed",
+      "tags": ["snow_source", "unit", "modified dy", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": -9999.0,
+        "precipitation_rate": 0.1,
+        "dy": 99999.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [9.9, 10.0, 10.0, 10.0, 10.01],
+      "expected_warning": ""
+    },
+    {
+      "name": "zero settling speed",
+      "tags": ["snow_source", "unit", "modified settling speed"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.0,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10.01],
+      "expected_warning": ""
+    },
+
+    {
+      "name": "zero precipitation rate",
+      "tags": ["snow_source", "unit", "modified precipitation rate"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.0,
+        "dy": 10.0,
+        "dt": 0.1
+        },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 9.95],
+      "expected_warning": ""
+    },
+    {
+      "name": "large positive precipitation rate",
+      "tags": ["snow_source", "unit", "modified precipitation rate"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 10.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.00001,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 9.95],
+      "expected_warning": ""
+    },
+    {
+      "name": "large positive precipitation rate",
+      "tags": ["snow_source", "unit", "modified precipitation rate"],
+      "inputs": {
+        "column_density": [10.0, 10.0, 10.0, 10.0, 9.95],
+        "settling_speed": 0.5,
+        "precipitation_rate": 99999.0,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [10.0, 10.0, 10.0, 10.0, 10009.85059],
+      "expected_warning": ""
+    },
+
+    {
+      "name": "snow density with column size 3 and variable value",
+      "tags": ["snow_source", "unit", "modified column density"],
+      "inputs": {
+        "column_density": [10.0, 5.0, 8.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [9.975, 5.015, 7.97],
+      "expected_warning": ""
+    },
+    {
+      "name": "snow density with column size 5 and value -1.0",
+      "tags": ["snow_source", "unit", "modified column density"],
+      "inputs": {
+        "column_density": [-1.0, -1.0, -1.0, -1.0, -1.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [0.0, 0.0, 0.0, 0.0, 0.0],
+      "expected_warning": ""
+    },
+    {
+      "name": "snow density with column size 1 and value -0.00001",
+      "tags": ["snow_source", "unit", "modified column density"],
+      "inputs": {
+        "column_density": [-0.00001],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [0.01],
+      "expected_warning": ""
+    },
+    {
+      "name": "snow density with column size 5 and value 0.0",
+      "tags": ["snow_source", "unit", "modified column density"],
+      "inputs": {
+        "column_density": [0.0, 0.0, 0.0, 0.0, 0.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [0.0, 0.0, 0.0, 0.0, 0.01],
+      "expected_warning": ""
+    },
+    {
+      "name": "snow density with column size 1 and value 0.00001",
+      "tags": ["snow_source", "unit", "modified column density"],
+      "inputs": {
+        "column_density": [0.00001],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [0.01001],
+      "expected_warning": ""
+    },
+    {
+      "name": "snow density with column size 5 and value 0.1",
+      "tags": ["snow_source", "unit", "modified column density"],
+      "inputs": {
+        "column_density": [0.1, 0.1, 0.1, 0.1, 0.1],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [0.1, 0.1, 0.1, 0.1, 0.1095],
+      "expected_warning": ""
+    },
+    {
+      "name": "snow density with column size 5 and value 99999.0",
+      "tags": ["snow_source", "unit", "modified column density"],
+      "inputs": {
+        "column_density": [99999.0, 99999.0, 99999.0, 99999.0, 99999.0],
+        "settling_speed": 0.5,
+        "precipitation_rate": 0.1,
+        "dy": 10.0,
+        "dt": 0.1
+      },
+      "expected_column_density": [99999.0, 99999.0, 99999.0, 99999.0, 99499.015625],
+      "expected_warning": ""
     }
   ]
 }
-

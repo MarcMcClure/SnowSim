@@ -8,3 +8,22 @@ TEST_CASE("config loader placeholder", "[config_loader]")
 {
     REQUIRE(true);
 }
+
+/**
+ * tests:
+ * 
+ * sucesfull load
+ * 
+ * invalid file path
+ * 
+ * deformed json
+ * 
+ * json does not contain params
+ * 
+ * json does not contain fields
+ * 
+ * params has a missing param
+ * 
+ * 
+ * 
+ */

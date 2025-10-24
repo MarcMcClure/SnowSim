@@ -14,12 +14,15 @@ if (-not (Test-Path $exePath)) {
 }
 
 $width = 36  # tweak as needed
-& $exePath --reporter compact --success --colour-mode ansi |
+& $exePath --reporter console --verbosity high --success --colour-mode ansi |
+# & $exePath --reporter console --verbosity high --colour-mode ansi |
     ForEach-Object {
-        if ($_ -match '^(?<ansi>\x1B\[[0-9;]*m)[A-Za-z]:.*[\\/](?<file>[^\\/]+\(\d+\)):(?<tail>.*)$') {
+        # shorten file path names
+        if ($_ -match '^(?<ansi>(?:\x1B\[[0-9;]*m)*)(?<path>[A-Za-z]:.*[\\/](?<file>[^\\/]+\(\d+\))):(?<tail>.*)$') {
             $padded = ($matches['file'] + ":").PadRight($width)
             $matches['ansi'] + $padded + $matches['tail'].TrimStart()
         } else {
             $_
         }
+        # compactify vectors
     }

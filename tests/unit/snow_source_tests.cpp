@@ -88,6 +88,29 @@ TEST_CASE("step_snow_source scenarios", "[snow_source][unit][warning]") {
             REQUIRE_THAT(next_column_density.data, Catch::Matchers::Approx(scenario.expected_column_density.data).margin(1e-5f));
         }
     }
+    SECTION("scenario: snow density with column size 10000 and value 1.0") {
+        Field1D<float> next_column_density;
+        Field1D<float> expected_column_density = Field1D<float>(10000, 1.0f);
+        expected_column_density(9999) = 1.005f;
+        const std::string warning = capture_stderr([&] {
+            next_column_density = snow::step_snow_source(
+                Field1D<float>(10000, 1.0f),
+                0.5f,
+                0.1f,
+                10.0f,
+                0.1f);
+        });
+
+        REQUIRE(warning == "");
+        REQUIRE(next_column_density.nx == expected_column_density.nx);
+        REQUIRE(next_column_density(9999) == Catch::Approx(1.005f).margin(1e-5f));
+        REQUIRE(next_column_density(8001) == Catch::Approx(1.0f).margin(1e-5f));
+        REQUIRE(next_column_density(420) == Catch::Approx(1.0f).margin(1e-5f));
+        REQUIRE(next_column_density(69) == Catch::Approx(1.0f).margin(1e-5f));
+        REQUIRE(next_column_density(0) == Catch::Approx(1.0f).margin(1e-5f));
+    //     REQUIRE_THAT(next_column_density.data, Catch::Matchers::Approx(expected_column_density.data).margin(1e-5f));
+    }
+
 }
 
 

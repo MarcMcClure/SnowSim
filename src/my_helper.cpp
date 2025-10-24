@@ -244,7 +244,7 @@ Field1D<float> step_snow_source(const Field1D<float>& column_density,
     // CFL check
     const float clf_snow_sorce = std::fabs(settling_speed) * dt / dy;
     if (clf_snow_sorce > 1){
-        std::cerr << "Warning: CFL condition exceeded (CFL_snow_source=" << clf_snow_sorce << "\n";
+        std::cerr << "Warning: CFL condition exceeded (CFL_snow_source=" << clf_snow_sorce << ")\n";
         return column_density;
     }
 
@@ -315,6 +315,7 @@ bool load_simulation_config(const std::string& config_path,
         return false;
     }
 
+    // Streams config file into json parser. If the json is malformed, errors and returns false.
     nlohmann::json root;
     try
     {
@@ -325,11 +326,13 @@ bool load_simulation_config(const std::string& config_path,
         return false;
     }
 
+    // checks that json contains a params onject
     if (!root.contains("params") || !root["params"].is_object())
     {
         return false;
     }
 
+    // populate params object from file. if a param is missing a param return false
     const auto& params_node = root["params"];
     try
     {
@@ -377,6 +380,7 @@ bool load_simulation_config(const std::string& config_path,
         return false;
     }
 
+    // checks that json contains a fields onject
     if (!root.contains("fields") || !root["fields"].is_object())
     {
         return false;
